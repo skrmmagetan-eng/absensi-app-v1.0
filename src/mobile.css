@@ -71,6 +71,8 @@
 
     /* Specific Sidebar Styles for Mobile */
     .sidebar-overlay {
+        display: block;
+        /* Override desktop hidden */
         position: fixed;
         top: 0;
         left: 0;
@@ -82,6 +84,11 @@
         opacity: 0;
         visibility: hidden;
         transition: all 0.3s ease;
+    }
+
+    .navbar-brand span:first-child {
+        display: inline-block;
+        /* Show hamburger icon on mobile */
     }
 
     .sidebar-overlay.active {

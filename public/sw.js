@@ -10,13 +10,21 @@ const ASSETS_TO_CACHE = [
 
 // Install Event
 self.addEventListener('install', (event) => {
-    self.skipWaiting();
+    // self.skipWaiting(); // Removed to allow user-controlled update
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS_TO_CACHE);
         })
     );
 });
+
+// Listen for message from client to activate immediately
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.action === 'skipWaiting') {
+        self.skipWaiting();
+    }
+});
+
 
 // Activate Event
 self.addEventListener('activate', (event) => {

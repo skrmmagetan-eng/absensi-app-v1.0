@@ -102,6 +102,17 @@
    RESET & BASE STYLES
    ========================================== */
 
+/* HIDE MOBILE COMPONENTS ON DESKTOP */
+.sidebar,
+.sidebar-overlay {
+  display: none;
+}
+
+.navbar-brand span:first-child {
+  /* Hide hamburger icon on desktop */
+  display: none;
+}
+
 * {
   margin: 0;
   padding: 0;

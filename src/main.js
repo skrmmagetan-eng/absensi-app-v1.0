@@ -111,14 +111,82 @@ async function init() {
 init();
 
 // Register Service Worker for PWA
+// Register Service Worker for PWA with Update Notification
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    let refreshing = false;
+
+    // Listen for controller change (when new worker takes over)
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        console.log('ServiceWorker registered:', registration.scope);
+
+        // Check for updates periodically (optional)
+        // setInterval(() => { registration.update(); }, 60 * 60 * 1000);
+
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed') {
+              if (navigator.serviceWorker.controller) {
+                // New update available!
+                showUpdateNotification(newWorker);
+              } else {
+                // Content cached for offline use.
+                console.log('Content is cached for offline use.');
+              }
+            }
+          });
+        });
       })
       .catch((err) => {
         console.log('ServiceWorker registration failed: ', err);
       });
+  });
+}
+
+function showUpdateNotification(worker) {
+  // Create a toast/notification
+  const toast = document.createElement('div');
+  toast.className = 'update-toast';
+  toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span>🚀 Update baru tersedia!</span>
+            <button id="reload-btn" class="btn btn-small btn-primary" style="padding: 4px 10px; font-size: 0.8rem;">
+               Update
+            </button>
+        </div>
+    `;
+
+  // Inline styles for the toast
+  Object.assign(toast.style, {
+    position: 'fixed',
+    bottom: '20px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    backgroundColor: 'var(--bg-card, #fff)',
+    padding: '12px 20px',
+    borderRadius: '50px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+    zIndex: '10000',
+    border: '1px solid var(--primary-light, #667eea)',
+    animation: 'slideUp 0.3s ease-out'
+  });
+
+  document.body.appendChild(toast);
+
+  document.getElementById('reload-btn').addEventListener('click', () => {
+    // Send skipWaiting message to the new worker
+    worker.postMessage({ action: 'skipWaiting' });
+    toast.remove();
+    showLoading && showLoading('Mengupdate aplikasi...');
   });
 }
