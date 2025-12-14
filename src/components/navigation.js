@@ -10,22 +10,24 @@ export function renderNavbar() {
   const isAdmin = ['admin', 'manager'].includes(profile?.role);
   const currentThemeIcon = themeManager.getCurrentIcon();
 
-  let roleLabel = 'Employee App';
-  if (profile?.role === 'admin') roleLabel = 'Admin Panel';
-  if (profile?.role === 'manager') roleLabel = 'Manager Panel';
+  // Generate Navigation Links
+  const linksHtml = isAdmin ? getAdminLinks() : getEmployeeLinks();
 
   return `
     <nav class="navbar">
       <div class="container navbar-container">
-        <a href="#" class="navbar-brand" onclick="event.preventDefault(); window.location.hash = '${isAdmin ? '#admin' : '#dashboard'}'">
-          📍 SKRM
-          <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">
-            | ${roleLabel}
-          </span>
-        </a>
+        <!-- Logo / Sidebar Toggle for Mobile -->
+        <div class="navbar-brand" id="sidebar-toggle-btn" style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
+           <span style="font-size: 1.5rem; line-height: 1;">☰</span>
+           <div style="line-height: 1.2;">
+             <div>📍 SKRM</div>
+             ${profile ? `<div style="font-size: 0.75rem; font-weight: normal; opacity: 0.8;">${profile.name?.split(' ')[0] || 'User'}</div>` : ''}
+           </div>
+        </div>
 
+        <!-- Desktop Menu (Hidden on Mobile via CSS) -->
         <div class="navbar-menu">
-          ${isAdmin ? getAdminLinks() : getEmployeeLinks()}
+          ${linksHtml}
           <div style="width: 1px; height: 24px; background: var(--border-color); margin: 0 0.5rem;"></div>
           
           <button class="btn btn-outline btn-small btn-icon" id="theme-btn" title="Ganti Tema">
@@ -36,130 +38,195 @@ export function renderNavbar() {
             Logout
           </button>
         </div>
-
-        <div class="mobile-menu-toggle d-none">
-           <!-- Icon placeholder if needed later -->
-        </div>
       </div>
     </nav>
+
+    <!-- Mobile Sidebar (Drawer) -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+         <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary-dark);">📍 Menu Utama</div>
+         <button class="btn btn-outline btn-small btn-icon" id="sidebar-close-btn">✕</button>
+      </div>
+      
+      <div class="sidebar-content">
+         <!-- Profile Widget in Sidebar -->
+         <div class="user-profile-widget">
+            <div style="font-weight: 600;">${profile?.name || 'Guest'}</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">${profile?.email || ''}</div>
+            <div class="badge badge-outline mt-xs" style="margin-top:0.5rem;">${profile?.role || 'User'}</div>
+         </div>
+
+         <div class="sidebar-links">
+            ${linksHtml}
+         </div>
+
+         <div style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+            <button class="btn btn-outline w-full justify-start" id="sidebar-theme-btn">
+               ${currentThemeIcon} Ganti Tema
+            </button>
+            <button class="btn btn-danger w-full justify-start" id="sidebar-logout-btn">
+               🚪 Logout
+            </button>
+         </div>
+      </div>
+    </div>
   `;
 }
 
 export function renderBottomNav() {
-  const profile = state.getState('profile');
-  if (['admin', 'manager'].includes(profile?.role)) return ''; // Admin/Manager uses desktop nav
-
-  const currentPath = window.location.hash.replace('#', '') || 'dashboard';
-
-  return `
-    <nav class="bottom-nav">
-      <div class="bottom-nav-container">
-        <div class="bottom-nav-item ${currentPath === 'dashboard' ? 'active' : ''}" onclick="window.location.hash='#dashboard'">
-          <div class="bottom-nav-icon">🏠</div>
-          <span class="bottom-nav-label">Home</span>
-        </div>
-        
-        <div class="bottom-nav-item ${currentPath === 'check-in' ? 'active' : ''}" onclick="window.location.hash='#check-in'">
-          <div class="bottom-nav-icon">📍</div>
-          <span class="bottom-nav-label">Absen</span>
-        </div>
-
-        <div class="bottom-nav-item ${currentPath.includes('pelanggan') ? 'active' : ''}" onclick="window.location.hash='#pelanggan'">
-          <div class="bottom-nav-icon">👥</div>
-          <span class="bottom-nav-label">Pelanggan</span>
-        </div>
-
-        <div class="bottom-nav-item ${currentPath.includes('order') ? 'active' : ''}" onclick="window.location.hash='#order'">
-          <div class="bottom-nav-icon">📦</div>
-          <span class="bottom-nav-label">Order</span>
-        </div>
-      </div>
-    </nav>
-  `;
+  return ''; // Bottom nav disabled/replaced by sidebar
 }
 
 function getEmployeeLinks() {
   const currentPath = window.location.hash.replace('#', '');
   return `
-    <a href="#dashboard" class="nav-link ${currentPath === 'dashboard' ? 'active' : ''}">Dashboard</a>
-    <a href="#check-in" class="nav-link ${currentPath === 'check-in' ? 'active' : ''}">Check In</a>
-    <a href="#pelanggan" class="nav-link ${currentPath.includes('pelanggan') ? 'active' : ''}">Pelanggan</a>
-    <a href="#order" class="nav-link ${currentPath.includes('order') ? 'active' : ''}">Order</a>
-    <a href="#riwayat" class="nav-link ${currentPath === 'riwayat' ? 'active' : ''}">Riwayat</a>
+    <a href="#dashboard" class="nav-link ${currentPath === 'dashboard' ? 'active' : ''}">
+       <span style="width:24px;">🏠</span> Dashboard
+    </a>
+    <a href="#check-in" class="nav-link ${currentPath === 'check-in' ? 'active' : ''}">
+       <span style="width:24px;">📍</span> Absen (Check-In)
+    </a>
+    <a href="#pelanggan" class="nav-link ${currentPath.includes('pelanggan') ? 'active' : ''}">
+       <span style="width:24px;">👥</span> Pelanggan
+    </a>
+    <a href="#order" class="nav-link ${currentPath.includes('order') ? 'active' : ''}">
+       <span style="width:24px;">📦</span> Order
+    </a>
+    <a href="#riwayat" class="nav-link ${currentPath === 'riwayat' ? 'active' : ''}">
+       <span style="width:24px;">📅</span> Riwayat
+    </a>
   `;
 }
 
 function getAdminLinks() {
   const currentPath = window.location.hash.replace('#', '');
   return `
-    <a href="#admin" class="nav-link ${currentPath === 'admin' ? 'active' : ''}">Dashboard</a>
-    <a href="#admin/karyawan" class="nav-link ${currentPath.includes('karyawan') ? 'active' : ''}">Karyawan</a>
-    <a href="#admin/orders" class="nav-link ${currentPath.includes('orders') ? 'active' : ''}">📦 Order</a>
-    <a href="#admin/katalog" class="nav-link ${currentPath.includes('katalog') ? 'active' : ''}">Katalog</a>
-    <a href="#admin/settings" class="nav-link ${currentPath.includes('settings') ? 'active' : ''}">⚙️ Profil</a>
+    <a href="#admin" class="nav-link ${currentPath === 'admin' ? 'active' : ''}">
+       <span style="width:24px;">📊</span> Dashboard
+    </a>
+    <a href="#admin/karyawan" class="nav-link ${currentPath.includes('karyawan') ? 'active' : ''}">
+       <span style="width:24px;">👥</span> Karyawan
+    </a>
+    <a href="#admin/orders" class="nav-link ${currentPath.includes('orders') ? 'active' : ''}">
+       <span style="width:24px;">📦</span> Order Masuk
+    </a>
+    <a href="#admin/katalog" class="nav-link ${currentPath.includes('katalog') ? 'active' : ''}">
+       <span style="width:24px;">🛍️</span> Katalog
+    </a>
+    <a href="#admin/settings" class="nav-link ${currentPath.includes('settings') ? 'active' : ''}">
+       <span style="width:24px;">⚙️</span> Pengaturan
+    </a>
   `;
 }
 
-// Global Logout Handler (Intelligent Exit)
-export function setupNavigationEvents() {
-  const logoutBtn = document.getElementById('logout-btn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-      const user = state.getState('user');
-      const profile = state.getState('profile');
+// Shared Logout Logic
+async function handleSmartLogout() {
+  const user = state.getState('user');
+  const profile = state.getState('profile');
 
-      // 1. If employee (not admin/manager), check for active visits
-      if (user && !['admin', 'manager'].includes(profile?.role)) {
-        try {
-          showLoading('Memeriksa status kunjungan...');
-          const { data: todayVisits } = await db.getTodayAttendance(user.id);
+  // 1. If employee (not admin/manager), check for active visits
+  if (user && !['admin', 'manager'].includes(profile?.role)) {
+    try {
+      showLoading('Memeriksa status kunjungan...');
+      const { data: todayVisits } = await db.getTodayAttendance(user.id);
 
-          // Find active visit (checked in but NOT checked out)
-          // status can be 'checked_in' or 'late', but check_out_time is null
-          const activeVisit = todayVisits?.find(v => !v.check_out_time);
+      // Find active visit (checked in but NOT checked out)
+      const activeVisit = todayVisits?.find(v => !v.check_out_time);
 
-          if (activeVisit) {
-            const proceed = confirm(`⚠️ Anda masih CHECK-IN di pelanggan "${activeVisit.customers?.name || 'Unknown'}".\n\nApakah Anda ingin CHECK-OUT OTOMATIS sekarang agar KPI tercatat?`);
+      if (activeVisit) {
+        const proceed = confirm(`⚠️ Anda masih CHECK-IN di pelanggan "${activeVisit.customers?.name || 'Unknown'}".\n\nApakah Anda ingin CHECK-OUT OTOMATIS sekarang agar KPI tercatat?`);
 
-            if (proceed) {
-              // Auto Checkout logic
-              try {
-                const currentPos = await geo.getCurrentPosition(); // Try getting real GPS
-                await db.checkOut(activeVisit.id, currentPos.latitude, currentPos.longitude);
-                showNotification('✅ Otomatis Check-Out berhasil!', 'success');
-              } catch (geoErr) {
-                // Fallback if GPS fails (use 0,0 or last known)
-                console.warn("GPS failed during auto-checkout, using Check-In location as fallback");
-                await db.checkOut(activeVisit.id, activeVisit.check_in_latitude, activeVisit.check_in_longitude);
-                showNotification('✅ Check-Out berhasil (GPS Fallback)', 'success');
-              }
-            } else {
-              // User chose NOT to checkout? Warn them.
-              if (!confirm("Jika logout tanpa Check-Out, durasi kunjungan hari ini tidak akan dihitung di KPI. Yakin mau lanjut logout?")) {
-                hideLoading();
-                return; // Cancel logout
-              }
-            }
+        if (proceed) {
+          // Auto Checkout logic
+          try {
+            const currentPos = await geo.getCurrentPosition(); // Try getting real GPS
+            await db.checkOut(activeVisit.id, {
+              check_out_time: new Date().toISOString(),
+              check_out_latitude: currentPos.latitude,
+              check_out_longitude: currentPos.longitude
+            });
+            showNotification('✅ Otomatis Check-Out berhasil!', 'success');
+          } catch (geoErr) {
+            // Fallback if GPS fails
+            console.warn("GPS failed during auto-checkout, using Check-In location as fallback");
+            await db.checkOut(activeVisit.id, {
+              check_out_time: new Date().toISOString(),
+              check_out_latitude: activeVisit.latitude, // fallback
+              check_out_longitude: activeVisit.longitude // fallback
+            });
+            showNotification('✅ Check-Out berhasil (GPS Fallback)', 'success');
           }
-        } catch (err) {
-          console.error("Smart logout error:", err);
-          // Continue to logout if check fails
+        } else {
+          if (!confirm("Jika logout tanpa Check-Out, durasi kunjungan hari ini tidak akan dihitung di KPI. Yakin mau lanjut logout?")) {
+            hideLoading();
+            return; // Cancel logout
+          }
         }
       }
-
-      // 2. Final Logout Process
-      await auth.signOut();
-      state.reset();
-      window.location.href = '/';
-      // window.location.reload(); handled by href change usually
-    });
+    } catch (err) {
+      console.error("Smart logout error:", err);
+    }
   }
 
-  const themeBtn = document.getElementById('theme-btn');
-  if (themeBtn) {
-    themeBtn.addEventListener('click', () => {
+  // 2. Final Logout
+  await auth.signOut();
+  state.reset();
+  window.location.href = '/';
+}
+
+export function setupNavigationEvents() {
+  // Sidebar Logic
+  const toggleBtn = document.getElementById('sidebar-toggle-btn');
+  const closeBtn = document.getElementById('sidebar-close-btn');
+  const overlay = document.getElementById('sidebar-overlay');
+  const sidebar = document.getElementById('sidebar');
+
+  function openSidebar() {
+    if (sidebar) sidebar.classList.add('active');
+    if (overlay) overlay.classList.add('active');
+  }
+
+  function closeSidebar() {
+    if (sidebar) sidebar.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
+  }
+
+  if (toggleBtn) toggleBtn.addEventListener('click', (e) => {
+    // Only toggle if we are in mobile view logic, but basically always yes for the toggle btn
+    e.preventDefault();
+    openSidebar();
+  });
+
+  if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+  if (overlay) overlay.addEventListener('click', closeSidebar);
+
+  // Close sidebar when clicking a link
+  const sidebarLinks = document.querySelectorAll('.sidebar-links .nav-link');
+  sidebarLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      setTimeout(closeSidebar, 150);
+    });
+  });
+
+  // Logout Handlers
+  const logoutBtns = [document.getElementById('logout-btn'), document.getElementById('sidebar-logout-btn')];
+  logoutBtns.forEach(btn => {
+    if (btn) btn.addEventListener('click', handleSmartLogout);
+  });
+
+  // Theme Handlers
+  const themeBtns = [document.getElementById('theme-btn'), document.getElementById('sidebar-theme-btn')];
+  themeBtns.forEach(btn => {
+    if (btn) btn.addEventListener('click', (e) => {
+      e.preventDefault();
       themeManager.cycleTheme();
-      themeBtn.textContent = themeManager.getCurrentIcon();
+      // Update all theme buttons text
+      const icon = themeManager.getCurrentIcon();
+      document.querySelectorAll('#theme-btn, #sidebar-theme-btn').forEach(b => {
+        if (b.tagName === 'BUTTON') b.textContent = icon;
+        else b.innerHTML = `${icon} Ganti Tema`;
+      });
     });
-  }
+  });
 }
