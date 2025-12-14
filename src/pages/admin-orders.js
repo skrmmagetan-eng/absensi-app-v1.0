@@ -109,12 +109,14 @@ function renderOrderCard(order) {
         cancelled: []
     };
 
+    const statusKey = order.status ? order.status.toLowerCase() : 'pending';
+
     return `
     <div class="card">
         <div class="card-header flex justify-between items-start" style="padding-bottom: 0.5rem; border:none;">
             <div>
                 <div class="flex items-center gap-2 mb-1">
-                    <span class="badge badge-${statusColors[order.status] || 'outline'}">
+                    <span class="badge badge-${statusColors[statusKey] || 'outline'}">
                         ${order.status.toUpperCase()}
                     </span>
                     <small class="text-muted">#${order.id.substring(0, 8)}</small>
@@ -137,7 +139,7 @@ function renderOrderCard(order) {
             </div>
             
             <div class="flex justify-end gap-2 items-center border-top pt-md mt-sm" style="border-color: var(--border-color);">
-                ${nextActions[order.status]?.map(action => `
+                ${nextActions[statusKey]?.map(action => `
                     <button class="btn btn-small ${action.cls}" onclick="updateStatus(this, '${order.id}', '${action.status}')">
                         ${action.label}
                     </button>
@@ -153,26 +155,28 @@ async function handleUpdateStatus(btnElement, orderId, newStatus) {
     let appendNote = '';
 
     // Interactive Logic
-    if (newStatus === 'cancelled') {
+    const nextStatus = newStatus.toLowerCase();
+
+    if (nextStatus === 'cancelled') {
         const reason = prompt('❌ Masukkan alasan penolakan/pembatalan:');
         if (!reason) return; // Cancel action if no reason provided
         appendNote = `\n[Admin - ${formatDate(new Date())}]: Dibatalkan. Alasan: ${reason}`;
     }
-    else if (newStatus === 'shipped') {
+    else if (nextStatus === 'shipped') {
         const resi = prompt('🚚 Masukkan Resi / Info Pengiriman (Opsional):');
         if (resi) {
             appendNote = `\n[Admin - ${formatDate(new Date())}]: Order dikirim. Info: ${resi}`;
         }
     }
-    else if (newStatus === 'approved') {
+    else if (nextStatus === 'approved') {
         if (!confirm('Setujui pesanan ini?')) return;
     }
-    else if (newStatus === 'completed') {
+    else if (nextStatus === 'completed') {
         if (!confirm('Tandai pesanan sebagai SELESAI?')) return;
         appendNote = `\n[System]: Order selesai pada ${formatDate(new Date())}`;
     }
     else {
-        if (!confirm('Update status pesanan?')) return;
+        if (!confirm(`Update status pesanan ke "${newStatus}"?`)) return;
     }
 
     // Loading State
