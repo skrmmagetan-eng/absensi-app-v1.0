@@ -3,6 +3,7 @@ import { renderNavbar } from '../components/navigation.js';
 import { formatCurrency, formatDate, showLoading, hideLoading, showNotification, createModal } from '../utils/helpers.js';
 
 let currentFilter = 'all';
+let allOrders = []; // Store orders locally for access
 
 export async function renderAdminOrdersPage() {
     const app = document.getElementById('app');
@@ -55,6 +56,8 @@ async function loadAdminOrders() {
         const { data: orders, error } = await db.getOrders();
 
         if (error) throw error;
+
+        allOrders = orders; // Save to global
 
         // Filter logic
         const filtered = currentFilter === 'all'
@@ -130,7 +133,7 @@ function renderOrderCard(order) {
         <div class="card-body" style="padding-top: 0;">
             <div class="p-sm bg-tertiary rounded mb-md text-sm">
                 ${order.items_summary || 'Detail pesanan tidak tersedia'}
-                ${order.notes ? `<br><em class="text-muted">Catatan: ${order.notes}</em>` : ''}
+                ${order.notes ? `<br><div class="mt-2 pt-2 border-top border-gray-200"><strong>Catatan:</strong><br>${order.notes.replace(/\n/g, '<br>')}</div>` : ''}
             </div>
             
             <div class="flex justify-end gap-2 items-center border-top pt-md mt-sm" style="border-color: var(--border-color);">
@@ -146,15 +149,31 @@ function renderOrderCard(order) {
 }
 
 async function handleUpdateStatus(btnElement, orderId, newStatus) {
-    const confirmMsg = {
-        approved: 'Setujui pesanan ini?',
-        loading: 'Ubah status menjadi SEDANG DIMUAT?',
-        shipped: 'Ubah status menjadi DIKIRIM?',
-        completed: 'Tandai pesanan SELESAI?',
-        cancelled: 'Batalkan pesanan ini?'
-    };
+    const order = allOrders.find(o => o.id === orderId);
+    let appendNote = '';
 
-    if (!confirm(confirmMsg[newStatus] || 'Update status?')) return;
+    // Interactive Logic
+    if (newStatus === 'cancelled') {
+        const reason = prompt('❌ Masukkan alasan penolakan/pembatalan:');
+        if (!reason) return; // Cancel action if no reason provided
+        appendNote = `\n[Admin - ${formatDate(new Date())}]: Dibatalkan. Alasan: ${reason}`;
+    }
+    else if (newStatus === 'shipped') {
+        const resi = prompt('🚚 Masukkan Resi / Info Pengiriman (Opsional):');
+        if (resi) {
+            appendNote = `\n[Admin - ${formatDate(new Date())}]: Order dikirim. Info: ${resi}`;
+        }
+    }
+    else if (newStatus === 'approved') {
+        if (!confirm('Setujui pesanan ini?')) return;
+    }
+    else if (newStatus === 'completed') {
+        if (!confirm('Tandai pesanan sebagai SELESAI?')) return;
+        appendNote = `\n[System]: Order selesai pada ${formatDate(new Date())}`;
+    }
+    else {
+        if (!confirm('Update status pesanan?')) return;
+    }
 
     // Loading State
     const originalText = btnElement.innerHTML;
@@ -163,7 +182,9 @@ async function handleUpdateStatus(btnElement, orderId, newStatus) {
 
     showLoading('Mengupdate status...');
     try {
-        const { error } = await db.updateOrderStatus(orderId, newStatus);
+        const newNotes = (order.notes || '') + appendNote;
+
+        const { error } = await db.updateOrderStatus(orderId, newStatus, newNotes);
         if (error) throw error;
 
         hideLoading();

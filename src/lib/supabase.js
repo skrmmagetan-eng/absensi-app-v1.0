@@ -218,10 +218,15 @@ export const db = {
         return { data, error };
     },
 
-    async updateOrderStatus(orderId, status) {
+    async updateOrderStatus(orderId, status, notes = null) {
+        const payload = { status, updated_at: new Date().toISOString() };
+        if (notes) {
+            payload.notes = notes;
+        }
+
         const { data, error } = await supabase
             .from('orders')
-            .update({ status, updated_at: new Date().toISOString() })
+            .update(payload)
             .eq('id', orderId)
             .select()
             .single();

@@ -173,7 +173,7 @@ function renderOrdersList(orders, container) {
       
       <div class="mb-sm p-3" style="background: var(--bg-tertiary); border-radius: var(--radius-sm);">
         <pre style="font-family: inherit; margin: 0; white-space: pre-wrap; color: var(--text-secondary); line-height: 1.5;">${formatOrderContent(order.items)}</pre>
-        ${order.notes ? `<div class="mt-2 text-small text-muted border-top pt-2">📝 "${order.notes}"</div>` : ''}
+        ${order.notes ? `<div class="mt-2 text-small text-muted border-top pt-2" style="white-space: pre-wrap;">📝 <strong>Catatan:</strong><br>${order.notes}</div>` : ''}
       </div>
 
       <div class="flex justify-between items-center mb-sm">

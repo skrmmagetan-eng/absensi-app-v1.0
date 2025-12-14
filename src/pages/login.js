@@ -49,11 +49,9 @@ export function renderLoginPage() {
             </p>
           </div>
           
-          <div class="mt-lg" style="padding: 1rem; background: rgba(102, 126, 234, 0.1); border-radius: var(--radius-md); border-left: 4px solid var(--primary-light);">
-            <p style="font-size: 0.875rem; margin: 0; color: var(--text-secondary);">
-              <strong>Demo Login:</strong><br>
-              Admin: admin@skrm.com / admin123<br>
-              Karyawan: employee@skrm.com / emp123
+          <div class="mt-lg text-center" style="opacity: 0.7;">
+            <p style="font-size: 0.75rem; margin: 0; color: var(--text-secondary); font-style: italic;">
+              "Real-time workforce data for smarter business decisions."
             </p>
           </div>
         </div>
