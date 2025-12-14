@@ -133,13 +133,10 @@ async function handleLogin(e) {
   btnLogin.disabled = true;
   btnLogin.innerHTML = `<span>⏳</span> <span>Memproses...</span>`;
 
-  showLoading('Memproses login...');
-
   try {
     const { data, error } = await auth.signIn(email, password);
 
     if (error) {
-      hideLoading();
       // Reset Button
       btnLogin.disabled = false;
       btnLogin.innerHTML = originalText;
@@ -158,18 +155,16 @@ async function handleLogin(e) {
         isAuthenticated: true,
       });
 
-      hideLoading();
-      showNotification('Login berhasil! Selamat datang.', 'success');
+      showNotification('Login berhasil!', 'success');
 
       // Redirect based on role
-      if (profile?.role === 'admin') {
+      if (profile?.role === 'admin' || profile?.role === 'manager') {
         router.navigate('/admin');
       } else {
         router.navigate('/dashboard');
       }
     }
   } catch (err) {
-    hideLoading();
     // Reset Button
     btnLogin.disabled = false;
     btnLogin.innerHTML = originalText;
