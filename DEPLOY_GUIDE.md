@@ -34,12 +34,12 @@ Jika Anda ingin deploy langsung dari komputer ini tanpa setup GitHub:
    - Set up and deploy? **Y**
    - Which scope? **(Pilih akun Anda)**
    - Link to existing project? **N**
-   - Project name? **skrm-app** (atau bebas)
+   - Project name? **absensi-app-v1-0** (atau bebas)
    - In which directory? **./** (Langsung Enter)
    - Want to modify these settings? **N** (Default Vite settings sudah benar)
 
 4. **Tunggu Proses Build & Upload**.
-   Setelah selesai, Anda akan mendapatkan link `Production: https://skrm-app...vercel.app`.
+   Setelah selesai, Anda akan mendapatkan link `Production: https://absensi-app-v1-0...vercel.app`.
 
 5. **⚠️ PENTING: Set Environment Variables**
    Aplikasi **TIDAK AKAN JALAN** jika Anda belum memasukkan setup Supabase.
@@ -56,10 +56,10 @@ Jika Anda ingin deploy langsung dari komputer ini tanpa setup GitHub:
 
 ## Opsi 2: Deploy via GitHub (Untuk Jangka Panjang)
 
-1. Upload folder project ini ke GitHub.
+1. Repository GitHub sudah tersedia di: https://github.com/skrmmagetan-eng/absensi-app-v1.0
 2. Buka [Vercel Dashboard](https://vercel.com/dashboard).
 3. Klik **Add New Project**.
-4. Import repository GitHub Anda.
+4. Import repository GitHub `skrmmagetan-eng/absensi-app-v1.0`.
 5. Framework Preset akan otomatis terdeteksi sebagai **Vite**.
 6. Di bagian **Environment Variables**:
    - Masukkan `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY`.
@@ -68,12 +68,7 @@ Jika Anda ingin deploy langsung dari komputer ini tanpa setup GitHub:
 ---
 
 ## Tips Tambahan
-- **Single Page Application (SPA)**: Karena ini SPA, Vercel biasanya sudah otomatis menangani routing. Namun jika Anda mengalami error 404 saat refresh halaman selain Home, buat file `vercel.json` di root project dengan isi:
-  ```json
-  {
-    "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
-  }
-  ```
+- **Single Page Application (SPA)**: Karena ini SPA, Vercel biasanya sudah otomatis menangani routing. Namun jika Anda mengalami error 404 saat refresh halaman selain Home, file `vercel.json` sudah tersedia di root project dengan konfigurasi yang sesuai.
 - **Database Rules**: Pastikan Anda sudah menjalankan script SQL `privacy_rules.sql` di Supabase agar data aman saat diakses publik.
 
 Selamat Mengudara! 🌍
