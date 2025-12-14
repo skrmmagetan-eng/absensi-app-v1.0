@@ -131,6 +131,11 @@ if ('serviceWorker' in navigator) {
         // Check for updates periodically (optional)
         // setInterval(() => { registration.update(); }, 60 * 60 * 1000);
 
+        // Check if there's already a waiting worker (update ready but waiting)
+        if (registration.waiting) {
+          showUpdateNotification(registration.waiting);
+        }
+
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
 
