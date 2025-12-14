@@ -1,0 +1,72 @@
+/* ==========================================
+   MOBILE OPTIMIZATIONS (PWA & Touch)
+   ========================================== */
+
+/* Area sentuh tombol lebih besar */
+@media (max-width: 768px) {
+    .btn {
+        min-height: 48px;
+        touch-action: manipulation;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+        min-height: 48px;
+        font-size: 16px !important;
+        /* Mencegah zoom iOS */
+    }
+
+    /* Bottom nav aman dari notch */
+    .bottom-nav {
+        padding-bottom: env(safe-area-inset-bottom, 20px);
+        height: calc(60px + env(safe-area-inset-bottom, 20px));
+    }
+
+    .bottom-nav-container {
+        height: 60px;
+        align-items: flex-start;
+        padding-top: 10px;
+    }
+
+    /* Padding halaman disesuaikan */
+    .page {
+        padding-left: var(--spacing-sm);
+        padding-right: var(--spacing-sm);
+        padding-bottom: calc(85px + env(safe-area-inset-bottom));
+    }
+
+    /* Map responsif */
+    .map-container {
+        height: 50vh;
+        max-height: 400px;
+        border-radius: var(--radius-md);
+    }
+
+    /* Modal full width di mobile bawah */
+    .modal {
+        width: 100%;
+        margin: 0;
+        max-height: 85vh;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        position: fixed;
+        bottom: 0;
+        animation: slideUpMobile 0.3s ease-out;
+    }
+
+    @keyframes slideUpMobile {
+        from {
+            transform: translateY(100%);
+        }
+
+        to {
+            transform: translateY(0);
+        }
+    }
+
+    .modal-overlay {
+        align-items: flex-end;
+        /* Modal muncul dari bawah */
+        padding: 0;
+    }
+}

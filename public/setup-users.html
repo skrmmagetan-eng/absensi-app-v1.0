@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SKRM - Setup Initial Users</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0e27;
+            color: white;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            margin-top: 0;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        p {
+            color: #b4b7c9;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            transition: transform 0.1s;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: #000;
+        }
+
+        .box {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .log {
+            color: #aaa;
+            margin-top: 5px;
+            border-top: 1px solid #333;
+            padding-top: 5px;
+        }
+
+        .success-msg {
+            color: #4facfe;
+        }
+
+        .error-msg {
+            color: #fc6767;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>⚙️ Setup Akun Awal</h1>
+            <p>Klik tombol di bawah untuk membuat user demo secara otomatis.</p>
+
+            <div class="box">
+                <strong>Akun yang akan dibuat:</strong><br><br>
+                1. Admin<br>
+                Email: admin@skrm.com<br>
+                Pass: admin123<br><br>
+                2. Karyawan<br>
+                Email: employee@skrm.com<br>
+                Pass: emp123
+            </div>
+
+            <button id="btn-setup" class="btn btn-primary">🚀 Buat Akun Demo</button>
+            <a href="/" id="btn-login" class="btn btn-success"
+                style="display: none; text-align: center; text-decoration: none;">✅ Pergi ke Halaman Login</a>
+
+            <div id="logs" class="log" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+        const SUPABASE_URL = 'https://nsyndnagwrfzgyifriak.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zeW5kbmFnd3Jmemd5aWZyaWFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2NjA1MzYsImV4cCI6MjA4MTIzNjUzNn0.j43-cO1RoxaY4q5jK8OXTyxEXhJxGA_ptyXfkwdd0vo';
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const btnSetup = document.getElementById('btn-setup');
+        const logs = document.getElementById('logs');
+        const btnLogin = document.getElementById('btn-login');
+
+        function log(msg, type = 'normal') {
+            logs.style.display = 'block';
+            const div = document.createElement('div');
+            div.textContent = `> ${msg}`;
+            if (type === 'success') div.className = 'success-msg';
+            if (type === 'error') div.className = 'error-msg';
+            logs.appendChild(div);
+            console.log(msg);
+        }
+
+        async function createUser(email, password, name, role) {
+            log(`Mendaftarkan ${email}...`);
+
+            // 1. Sign Up
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+            });
+
+            if (error) {
+                log(`Gagal sign up: ${error.message}`, 'error');
+                return false;
+            }
+
+            const user = data.user;
+            if (!user) {
+                log('User sudah ada atau butuh konfirmasi email.', 'error');
+                // Try to login instead to get ID if already exists
+                const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+                if (loginData.user) {
+                    log('Berhasil login ulang untuk update profile.');
+                    await insertProfile(loginData.user.id, email, name, role);
+                    return true;
+                }
+                return false;
+            }
+
+            log(`User Auth dibuat. ID: ${user.id}`);
+
+            // 2. Insert into public.users
+            return await insertProfile(user.id, email, name, role);
+        }
+
+        async function insertProfile(id, email, name, role) {
+            const { error: dbError } = await supabase
+                .from('users')
+                .upsert({
+                    id: id,
+                    email: email,
+                    name: name,
+                    role: role,
+                    created_at: new Date().toISOString()
+                });
+
+            if (dbError) {
+                log(`Gagal simpan profil database: ${dbError.message}`, 'error');
+                return false;
+            }
+
+            log(`Profil ${role} berhasil disimpan!`, 'success');
+            return true;
+        }
+
+        btnSetup.addEventListener('click', async () => {
+            btnSetup.disabled = true;
+            btnSetup.textContent = 'Memproses...';
+            logs.innerHTML = '';
+
+            try {
+                // Create Admin
+                await createUser('admin@skrm.com', 'admin123', 'Administrator', 'admin');
+
+                // Create Employee
+                await createUser('employee@skrm.com', 'emp123', 'Budi Santoso', 'employee');
+
+                log('🎉 SETUP SELESAI!', 'success');
+                btnSetup.style.display = 'none';
+                btnLogin.style.display = 'block';
+
+            } catch (err) {
+                log(`Error tak terduga: ${err.message}`, 'error');
+                btnSetup.disabled = false;
+                btnSetup.textContent = 'Coba Lagi';
+            }
+        });
+    </script>
+</body>
+
+</html>
