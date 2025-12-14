@@ -130,9 +130,8 @@ async function handleLogin(e) {
 
   // Loading State
   const btnLogin = document.getElementById('login-btn');
-  const originalText = btnLogin.innerHTML;
   btnLogin.disabled = true;
-  btnLogin.innerHTML = `<span>⏳</span> <span>Memproses...</span>`;
+  // User requested to remove the "Memproses..." loading text
 
   try {
     // 1. Login Authentication
@@ -174,7 +173,6 @@ async function handleLogin(e) {
   } catch (err) {
     // Reset Button
     btnLogin.disabled = false;
-    btnLogin.innerHTML = originalText;
 
     // Show friendly error
     let msg = 'Terjadi kesalahan sistem';
