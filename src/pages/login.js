@@ -1,7 +1,7 @@
 import { auth, db } from '../lib/supabase.js';
 import { state } from '../lib/router.js';
 import { router } from '../lib/router.js';
-import { showNotification, showLoading, hideLoading, validate, branding } from '../utils/helpers.js';
+import { showNotification, showLoading, hideLoading, validate } from '../utils/helpers.js';
 
 export function renderLoginPage() {
   const app = document.getElementById('app');
@@ -66,38 +66,6 @@ export function renderLoginPage() {
   if (form) {
     form.addEventListener('submit', handleLogin);
   }
-
-  // Fetch branding in background (Lazy Load)
-  loadBranding();
-}
-
-async function loadBranding() {
-  const nameEl = document.getElementById('brand-name');
-  const logoContainer = document.getElementById('brand-logo-container');
-
-  // 1. Optimistic Load from Cache (Instant & Offline proof)
-  const cached = branding.getLocal();
-
-  if (cached.name && nameEl) nameEl.textContent = cached.name;
-  if (cached.logo && logoContainer) {
-    logoContainer.innerHTML = `<img src="${cached.logo}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; border: 3px solid var(--primary-light);">`;
-  }
-
-  // 2. Fetch Fresh Data (Background Update)
-  try {
-    const { data } = await db.getBusinessProfile();
-    if (data) {
-      if (nameEl && data.name) nameEl.textContent = data.name;
-      if (logoContainer && data.logo_url) {
-        logoContainer.innerHTML = `<img src="${data.logo_url}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; border: 3px solid var(--primary-light);">`;
-      }
-
-      // Update Cache for next visit (Save base64)
-      branding.saveToLocal(data.logo_url, data.name);
-    }
-  } catch (e) {
-    console.warn('Silent fail loading branding:', e);
-  }
 }
 
 async function handleLogin(e) {
@@ -134,7 +102,11 @@ async function handleLogin(e) {
   btnLogin.innerHTML = `<span>⏳</span> <span>Memproses...</span>`;
 
   try {
-    const { data, error } = await auth.signIn(email, password);
+    // Lakukan login dan pengambilan profil secara paralel untuk meningkatkan performa
+    const [{ data, error }, profileData] = await Promise.all([
+      auth.signIn(email, password),
+      db.getUserProfileByEmail(email) // Fungsi baru untuk mengambil profil berdasarkan email
+    ]);
 
     if (error) {
       // Reset Button
@@ -146,19 +118,16 @@ async function handleLogin(e) {
     }
 
     if (data.user) {
-      // Get user profile
-      const { data: profile } = await db.getUserProfile(data.user.id);
-
       state.updateState({
         user: data.user,
-        profile: profile,
+        profile: profileData.data || null,
         isAuthenticated: true,
       });
 
       showNotification('Login berhasil!', 'success');
 
       // Redirect based on role
-      if (profile?.role === 'admin' || profile?.role === 'manager') {
+      if (profileData?.data?.role === 'admin' || profileData?.data?.role === 'manager') {
         router.navigate('/admin');
       } else {
         router.navigate('/dashboard');

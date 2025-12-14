@@ -3,7 +3,7 @@ import { compressImage } from '../utils/helpers.js';
 
 // TODO: Ganti dengan kredensial Supabase Anda
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -51,6 +51,16 @@ export const db = {
             .from('users')
             .select('*')
             .eq('id', userId)
+            .single();
+        return { data, error };
+    },
+
+    // Fungsi baru untuk mengambil profil berdasarkan email
+    async getUserProfileByEmail(email) {
+        const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
             .single();
         return { data, error };
     },

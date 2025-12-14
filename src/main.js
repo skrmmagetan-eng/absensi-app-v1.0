@@ -1,7 +1,3 @@
-import './style.css';
-import './style.css';
-import './mobile.css';
-import './loading.css';
 import { auth, db } from './lib/supabase.js';
 import { router, state } from './lib/router.js';
 import { themeManager } from './utils/theme.js';
@@ -88,8 +84,6 @@ async function handleRouting() {
 
 // Initialization
 async function init() {
-  showLoading('Memuat aplikasi...');
-
   try {
     // Check auth status
     const user = await auth.getUser();
@@ -103,15 +97,12 @@ async function init() {
       });
     }
 
-    hideLoading();
-
     // Start router
     window.addEventListener('hashchange', handleRouting);
     handleRouting(); // Initial load
 
   } catch (error) {
     console.error('Init error:', error);
-    hideLoading();
     renderLoginPage();
   }
 }

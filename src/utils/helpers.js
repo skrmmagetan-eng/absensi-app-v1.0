@@ -241,36 +241,36 @@ function createNotificationContainer() {
 }
 
 export const showLoading = (message = 'Loading...') => {
-    const existing = document.getElementById('loading-overlay');
-    if (existing) {
-        // Update message if already showing
-        const textEl = existing.querySelector('.loading-text');
-        if (textEl) textEl.textContent = message;
-        return;
-    }
+  const existing = document.getElementById('loading-overlay');
+  if (existing) {
+    // Update message if already showing
+    const textEl = existing.querySelector('.loading-text');
+    if (textEl) textEl.textContent = message;
+    return;
+  }
 
-    const overlay = document.createElement('div');
-    overlay.id = 'loading-overlay';
-    overlay.className = 'loading-overlay';
-    overlay.innerHTML = `
+  const overlay = document.createElement('div');
+  overlay.id = 'loading-overlay';
+  overlay.className = 'loading-overlay';
+  overlay.innerHTML = `
     <div class="spinner-container">
       <div class="spinner"></div>
     </div>
     <div class="loading-text">${message}</div>
   `;
-    document.body.appendChild(overlay);
+  document.body.appendChild(overlay);
 };
 
 export const hideLoading = () => {
-    const overlay = document.getElementById('loading-overlay');
-    if (overlay) {
-        // Add fade out effect
-        overlay.style.opacity = '0';
-        overlay.style.transition = 'opacity 0.2s ease-out';
-        setTimeout(() => {
-            if (overlay.parentElement) overlay.remove();
-        }, 200);
-    }
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) {
+    // Mengurangi durasi animasi untuk membuat transisi lebih cepat
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.1s ease-out'; // Dari 0.2s menjadi 0.1s
+    setTimeout(() => {
+      if (overlay.parentElement) overlay.remove();
+    }, 100); // Dari 200ms menjadi 100ms
+  }
 };
 
 

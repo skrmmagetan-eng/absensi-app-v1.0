@@ -39,14 +39,14 @@ begin
      
     -- 2. Hitung Pelanggan Baru (New Acquisition)
     (select count(*) from customers c 
-     where c.created_by = u.id and c.created_at between start_date and end_date) as new_customer_count,
+     where c.employee_id = u.id and c.created_at between start_date and end_date) as new_customer_count,
      
     -- 3. Hitung Order & Sales
     (select count(*) from orders o 
-     where o.user_id = u.id and o.created_at between start_date and end_date) as order_count,
+     where o.employee_id = u.id and o.created_at between start_date and end_date) as order_count,
     coalesce(
       (select sum(total_amount) from orders o 
-       where o.user_id = u.id and o.created_at between start_date and end_date), 
+       where o.employee_id = u.id and o.created_at between start_date and end_date), 
     0) as total_sales,
 
     -- Rumus Skor Sederhana (Bisa disesuaikan): 
@@ -55,8 +55,8 @@ begin
     least(100, 
       (
         (select count(*) from customer_visits v where v.user_id = u.id and v.created_at between start_date and end_date) * 2 +
-        (select count(*) from customers c where c.created_by = u.id and c.created_at between start_date and end_date) * 10 +
-        (select count(*) from orders o where o.user_id = u.id and o.created_at between start_date and end_date) * 5
+        (select count(*) from customers c where c.employee_id = u.id and c.created_at between start_date and end_date) * 10 +
+        (select count(*) from orders o where o.employee_id = u.id and o.created_at between start_date and end_date) * 5
       )::numeric
     ) as score
 
