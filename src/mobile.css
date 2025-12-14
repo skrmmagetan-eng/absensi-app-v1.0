@@ -83,6 +83,8 @@
         z-index: 2000;
         opacity: 0;
         visibility: hidden;
+        pointer-events: none;
+        /* Prevent blocking clicks when hidden */
         transition: all 0.3s ease;
     }
 
@@ -94,6 +96,8 @@
     .sidebar-overlay.active {
         opacity: 1;
         visibility: visible;
+        pointer-events: auto;
+        /* Enable clicks when visible */
     }
 
     .sidebar {
