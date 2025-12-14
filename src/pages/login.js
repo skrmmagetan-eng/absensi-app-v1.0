@@ -135,43 +135,53 @@ async function handleLogin(e) {
   btnLogin.innerHTML = `<span>⏳</span> <span>Memproses...</span>`;
 
   try {
-    // Lakukan login dan pengambilan profil secara paralel untuk meningkatkan performa
-    const [{ data, error }, profileData] = await Promise.all([
-      auth.signIn(email, password),
-      db.getUserProfileByEmail(email) // Fungsi baru untuk mengambil profil berdasarkan email
-    ]);
+    // 1. Login Authentication
+    const { data: authData, error: authError } = await auth.signIn(email, password);
 
-    if (error) {
-      // Reset Button
-      btnLogin.disabled = false;
-      btnLogin.innerHTML = originalText;
-
-      showNotification(error.message || 'Login gagal', 'danger');
-      return;
+    if (authError) {
+      throw authError;
     }
 
-    if (data.user) {
-      state.updateState({
-        user: data.user,
-        profile: profileData.data || null,
-        isAuthenticated: true,
-      });
-
-      showNotification('Login berhasil!', 'success');
-
-      // Redirect based on role
-      if (profileData?.data?.role === 'admin' || profileData?.data?.role === 'manager') {
-        router.navigate('/admin');
-      } else {
-        router.navigate('/dashboard');
-      }
+    if (!authData.user) {
+      throw new Error('User tidak ditemukan');
     }
+
+    // 2. Fetch User Profile (SEQUENTIAL - ensuring auth token is present)
+    // Using ID is more reliable than email for RLS policies
+    const { data: profile, error: profileError } = await db.getUserProfile(authData.user.id);
+
+    if (profileError) {
+      // If profile fetch fails (rare), we might still want to proceed or handle it
+      console.warn('Profile fetch error:', profileError);
+    }
+
+    // 3. Update State & Redirect
+    state.updateState({
+      user: authData.user,
+      profile: profile || null,
+      isAuthenticated: true,
+    });
+
+    showNotification('Login berhasil!', 'success');
+
+    // Redirect based on role
+    if (profile?.role === 'admin' || profile?.role === 'manager') {
+      router.navigate('/admin');
+    } else {
+      router.navigate('/dashboard');
+    }
+
   } catch (err) {
     // Reset Button
     btnLogin.disabled = false;
     btnLogin.innerHTML = originalText;
 
-    showNotification('Terjadi kesalahan sistem', 'danger');
+    // Show friendly error
+    let msg = 'Terjadi kesalahan sistem';
+    if (err.message === 'Invalid login credentials') msg = 'Email atau password salah';
+    else if (err.message) msg = err.message;
+
+    showNotification(msg, 'danger');
     console.error('Login error:', err);
   }
 }
