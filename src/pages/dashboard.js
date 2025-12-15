@@ -81,6 +81,10 @@ export async function renderDashboardPage() {
               <span>📦</span>
               <span>Buat Order</span>
             </button>
+            <button class="btn btn-outline" onclick="window.location.hash='#katalog'">
+              <span>🛍️</span>
+              <span>Lihat Katalog</span>
+            </button>
             <button class="btn btn-outline" onclick="window.location.hash='#riwayat'">
               <span>📊</span>
               <span>Lihat Riwayat</span>

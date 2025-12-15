@@ -111,6 +111,9 @@ function getEmployeeLinks() {
     <a href="#order" class="nav-link ${currentPath.includes('order') ? 'active' : ''}">
        <span style="width:24px;">📦</span> Order
     </a>
+    <a href="#katalog" class="nav-link ${currentPath.includes('katalog') ? 'active' : ''}">
+       <span style="width:24px;">🛍️</span> Katalog
+    </a>
     <a href="#riwayat" class="nav-link ${currentPath === 'riwayat' ? 'active' : ''}">
        <span style="width:24px;">📅</span> Riwayat
     </a>
