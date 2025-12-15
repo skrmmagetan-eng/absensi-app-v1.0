@@ -163,11 +163,11 @@ async function handleLogin(e) {
 
     showNotification('Login berhasil!', 'success');
 
-    // Redirect based on role
+    // Redirect based on role using hash navigation (immediate)
     if (profile?.role === 'admin' || profile?.role === 'manager') {
-      router.navigate('/admin');
+      window.location.hash = '#admin';
     } else {
-      router.navigate('/dashboard');
+      window.location.hash = '#dashboard';
     }
 
   } catch (err) {
