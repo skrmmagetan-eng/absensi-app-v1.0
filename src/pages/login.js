@@ -165,12 +165,15 @@ async function handleLogin(e) {
 
     // Determine target page
     const targetHash = (profile?.role === 'admin' || profile?.role === 'manager')
-      ? '#admin'
-      : '#dashboard';
+      ? 'admin'
+      : 'dashboard';
 
-    // Set hash and force reload to ensure clean page load
-    window.location.hash = targetHash;
-    window.location.reload();
+    // Force complete page reload with target hash
+    // This is the most reliable way to ensure immediate navigation
+    const currentUrl = window.location.origin + window.location.pathname;
+    const targetUrl = currentUrl + '#' + targetHash;
+
+    window.location.replace(targetUrl);
 
   } catch (err) {
     // Reset Button
