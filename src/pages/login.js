@@ -51,7 +51,7 @@ export function renderLoginPage() {
           
           <div class="mt-lg text-center" style="opacity: 0.7;">
             <p style="font-size: 0.75rem; margin: 0; color: var(--text-secondary); font-style: italic;">
-              "Real-time workforce data for smarter business decisions."
+              "Transforming attendance data into workforce intelligence."
             </p>
           </div>
         </div>
