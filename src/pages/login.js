@@ -168,18 +168,9 @@ async function handleLogin(e) {
       ? '#admin'
       : '#dashboard';
 
-    // Force navigation by setting hash and manually triggering routing
+    // Set hash and force reload to ensure clean page load
     window.location.hash = targetHash;
-
-    // Force immediate re-render by calling handleRouting manually
-    // This ensures the page loads without waiting for hashchange event
-    setTimeout(async () => {
-      const hash = window.location.hash.replace('#', '');
-      const handler = window.appRoutes?.[hash];
-      if (handler) {
-        await handler();
-      }
-    }, 50);
+    window.location.reload();
 
   } catch (err) {
     // Reset Button
