@@ -22,7 +22,7 @@ export async function renderAdminOrdersPage() {
         </div>
 
         <!-- Filter Tabs -->
-        <div class="card p-2 mb-md bg-tertiary flex gap-2 overflow-x-auto no-scrollbar" style="border-radius: var(--radius-full); display: flex; white-space: nowrap; width: 100%;">
+        <div class="card p-2 mb-md bg-tertiary gap-2 no-scrollbar" style="border-radius: var(--radius-full); display: flex; overflow-x: auto; white-space: nowrap; max-width: 100%; -webkit-overflow-scrolling: touch;">
             <button class="btn btn-small ${currentFilter === 'all' ? 'btn-primary' : 'btn-ghost'}" onclick="filterOrders('all')" style="flex-shrink: 0;">Semua</button>
             <button class="btn btn-small ${currentFilter === 'pending' ? 'btn-warning' : 'btn-ghost'}" onclick="filterOrders('pending')" style="flex-shrink: 0;">Pending</button>
             <button class="btn btn-small ${currentFilter === 'approved' ? 'btn-primary' : 'btn-ghost'}" onclick="filterOrders('approved')" style="flex-shrink: 0;">Disetujui</button>
