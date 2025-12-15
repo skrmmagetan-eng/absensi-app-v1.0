@@ -2,13 +2,20 @@ import { auth, db } from '../lib/supabase.js';
 import { state } from '../lib/router.js';
 import { router } from '../lib/router.js';
 import { themeManager } from '../utils/theme.js';
-import { showNotification, showLoading, hideLoading, geo } from '../utils/helpers.js';
+import { showNotification, showLoading, hideLoading, geo, branding } from '../utils/helpers.js';
 
 export function renderNavbar() {
   const user = state.getState('user');
   const profile = state.getState('profile');
   const isAdmin = ['admin', 'manager'].includes(profile?.role);
   const currentThemeIcon = themeManager.getCurrentIcon();
+
+  // Dynamic Branding
+  const brand = branding.getLocal();
+  const brandName = brand.name || 'SKRM';
+  const hasLogo = !!brand.logo;
+  // Rule: If name is long (>15 chars) AND logo exists, hide text. Otherwise show text.
+  const showText = !hasLogo || brandName.length <= 15;
 
   // Generate Navigation Links
   const linksHtml = isAdmin ? getAdminLinks() : getEmployeeLinks();
@@ -17,11 +24,22 @@ export function renderNavbar() {
     <nav class="navbar">
       <div class="container navbar-container">
         <!-- Logo / Sidebar Toggle for Mobile -->
-        <div class="navbar-brand" id="sidebar-toggle-btn" style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
+        <div class="navbar-brand" id="sidebar-toggle-btn" style="cursor: pointer; display: flex; align-items: center; gap: 12px;">
            <span style="font-size: 1.5rem; line-height: 1;">☰</span>
-           <div style="line-height: 1.2;">
-             <div>📍 SKRM</div>
-             ${profile ? `<div style="font-size: 0.75rem; font-weight: normal; opacity: 0.8;">${profile.name?.split(' ')[0] || 'User'}</div>` : ''}
+           
+           <div class="flex items-center gap-2">
+             ${hasLogo
+      ? `<img src="${brand.logo}" alt="Logo" style="height: 32px; width: auto; object-fit: contain; border-radius: 4px;">`
+      : `<span style="font-size: 1.5rem;">📍</span>`
+    }
+             
+             ${showText
+      ? `<div style="line-height: 1.2;">
+                    <div style="font-weight: 700; font-size: 1.1rem;">${brandName}</div>
+                    ${profile ? `<div style="font-size: 0.75rem; font-weight: normal; opacity: 0.8;">${profile.name?.split(' ')[0] || 'User'}</div>` : ''}
+                  </div>`
+      : ''
+    }
            </div>
         </div>
 

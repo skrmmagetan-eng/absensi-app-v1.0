@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js'; // Import factory for temp
 import { renderNavbar } from '../components/navigation.js';
 import { showNotification, showLoading, hideLoading, createModal, formatDate } from '../utils/helpers.js';
 
+let employeesCache = [];
+
 export async function renderAdminEmployeesPage() {
   const app = document.getElementById('app');
 
@@ -44,6 +46,12 @@ export async function renderAdminEmployeesPage() {
     </div>
   `;
 
+  // Global handler
+  window.editEmployee = (id) => {
+    const emp = employeesCache.find(e => e.id === id);
+    if (emp) showEditEmployeeModal(emp);
+  };
+
   await loadEmployees();
 
   // Event Listener
@@ -62,6 +70,8 @@ async function loadEmployees() {
       return;
     }
 
+    employeesCache = employees;
+
     tbody.innerHTML = employees.map(emp => `
       <tr>
         <td>
@@ -71,7 +81,7 @@ async function loadEmployees() {
         <td>${emp.email}</td>
         <td><span class="badge badge-success">Aktif</span></td>
         <td>
-          <button class="btn btn-outline btn-small" onclick="alert('Fitur edit detail akan segera hadir')">✏️</button>
+          <button class="btn btn-outline btn-small" onclick="window.editEmployee('${emp.id}')">✏️</button>
         </td>
       </tr>
     `).join('');
@@ -141,6 +151,76 @@ async function showAddEmployeeModal() {
     // Process
     await handleAddEmployee(name, email, password);
   };
+}
+
+// Edit Modal
+function showEditEmployeeModal(emp) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">✏️ Edit Karyawan</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="edit-employee-form">
+            <div class="form-group">
+              <label class="form-label">Nama Lengkap</label>
+              <input type="text" id="edit-name" class="form-input" required value="${emp.name}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" id="edit-email" class="form-input" disabled value="${emp.email}" style="background: var(--bg-tertiary); opacity: 0.7;">
+              <small class="text-xs text-muted">Email tidak dapat diubah dari sini.</small>
+            </div>
+            <div class="form-group">
+               <label class="form-label">Role / Jabatan</label>
+               <input type="text" id="edit-role" class="form-input" value="${emp.role || 'employee'}">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="btn-edit-cancel">Batal</button>
+          <button class="btn btn-primary" id="btn-edit-save">Simpan Perubahan</button>
+        </div>
+      </div>
+    `;
+
+  document.body.appendChild(overlay);
+
+  const close = () => { if (document.body.contains(overlay)) document.body.removeChild(overlay); };
+
+  overlay.querySelector('.modal-close').onclick = close;
+  overlay.querySelector('#btn-edit-cancel').onclick = close;
+
+  overlay.querySelector('#btn-edit-save').onclick = async () => {
+    const newName = document.getElementById('edit-name').value;
+    const newRole = document.getElementById('edit-role').value;
+
+    if (!newName) {
+      showNotification('Nama tidak boleh kosong', 'warning');
+      return;
+    }
+
+    close();
+    await handleEditEmployee(emp.id, newName, newRole);
+  };
+}
+
+async function handleEditEmployee(id, name, role) {
+  showLoading('Menyimpan perubahan...');
+  try {
+    const { error } = await db.updateUserProfile(id, { name, role });
+    if (error) throw error;
+
+    hideLoading();
+    showNotification('Data karyawan diperbarui', 'success');
+    loadEmployees(); // Refresh list
+  } catch (e) {
+    hideLoading();
+    showNotification('Gagal update: ' + e.message, 'danger');
+  }
 }
 
 async function handleAddEmployee(name, email, password) {

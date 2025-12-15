@@ -1,4 +1,4 @@
-const CACHE_NAME = 'skrm-v2';
+const CACHE_NAME = 'skrm-v3';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
