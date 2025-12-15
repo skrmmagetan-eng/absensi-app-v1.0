@@ -4,31 +4,106 @@
 
 /* Area sentuh tombol lebih besar */
 @media (max-width: 768px) {
+    :root {
+        --spacing-md: 1rem;
+        --spacing-lg: 1.5rem;
+    }
+
+    body {
+        font-size: 14px;
+        /* Base font smaller */
+    }
+
     .btn {
-        min-height: 48px;
+        min-height: 40px;
+        /* Reduced from 48px to save space */
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
         touch-action: manipulation;
     }
 
     .form-input,
     .form-select,
     .form-textarea {
-        min-height: 48px;
-        font-size: 16px !important;
-        /* Mencegah zoom iOS */
+        min-height: 40px;
+        /* Reduced height */
+        font-size: 14px !important;
+        padding: 0.5rem 0.75rem;
     }
 
     /* Padding halaman reset (No more bottom nav) */
     .page {
-        padding-left: var(--spacing-sm);
-        padding-right: var(--spacing-sm);
-        padding-bottom: var(--spacing-lg);
-        /* Normal padding */
+        padding: 0.75rem;
+        padding-bottom: 2rem;
+        width: 100vw;
+        overflow-x: hidden;
+    }
+
+    .container {
+        padding: 0;
+        max-width: 100%;
+    }
+
+    /* Full width cards with compact padding */
+    .card,
+    .card-glass {
+        padding: 0.75rem;
+        border-radius: var(--radius-md);
+        margin-bottom: 0.75rem;
+    }
+
+    /* Reduce headings */
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    h2 {
+        font-size: 1.25rem;
+    }
+
+    h3 {
+        font-size: 1.1rem;
+    }
+
+    h4 {
+        font-size: 1rem;
+    }
+
+    p {
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Compact Header Actions (Title left, Button right or stacked) */
+    .flex.justify-between.items-center {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    /* Make buttons in headers stretch or fit better */
+    .mb-lg.flex.justify-between.items-center>button {
+        /* font-size: 0.75rem; */
+    }
+
+    /* List Item / Card Item Compact */
+    .card-header {
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-title {
+        font-size: 1rem;
+    }
+
+    .badge {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.5rem;
     }
 
     /* Map responsif */
     .map-container {
-        height: 50vh;
-        max-height: 400px;
+        height: 40vh;
+        max-height: 300px;
         border-radius: var(--radius-md);
     }
 
@@ -36,7 +111,7 @@
     .modal {
         width: 100%;
         margin: 0;
-        max-height: 85vh;
+        max-height: 90vh;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         position: fixed;
         bottom: 0;
@@ -58,21 +133,22 @@
         padding: 0;
     }
 
+    .modal-body {
+        padding: 1rem;
+    }
+
     /* Mobile Sidebar & Navigation Overrides */
     .navbar-menu {
         display: none !important;
-        /* Hide desktop menu items and theme btn */
     }
 
     .bottom-nav {
         display: none !important;
-        /* Remove bottom nav */
     }
 
     /* Specific Sidebar Styles for Mobile */
     .sidebar-overlay {
         display: block;
-        /* Override desktop hidden */
         position: fixed;
         top: 0;
         left: 0;
@@ -84,27 +160,26 @@
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
-        /* Prevent blocking clicks when hidden */
         transition: all 0.3s ease;
     }
 
     .navbar-brand span:first-child {
         display: inline-block;
-        /* Show hamburger icon on mobile */
     }
 
     .sidebar-overlay.active {
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
-        /* Enable clicks when visible */
     }
 
     .sidebar {
         position: fixed;
         top: 0;
         left: 0;
-        width: 280px;
+        width: 80%;
+        /* Slightly smaller than full width */
+        max-width: 300px;
         height: 100vh;
         background: var(--bg-card);
         backdrop-filter: blur(30px);
@@ -114,7 +189,7 @@
         box-shadow: var(--shadow-xl);
         display: flex;
         flex-direction: column;
-        padding: var(--spacing-md);
+        padding: 1rem;
         overflow-y: auto;
         border-right: 1px solid var(--border-color);
     }
@@ -127,22 +202,22 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: var(--spacing-lg);
-        padding-bottom: var(--spacing-sm);
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
         border-bottom: 1px solid var(--border-color);
     }
 
     .sidebar-links {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.25rem;
     }
 
     .sidebar-links .nav-link {
         display: flex;
         align-items: center;
-        padding: 0.875rem 1rem;
-        font-size: 1rem;
+        padding: 0.75rem 0.85rem;
+        font-size: 0.95rem;
         color: var(--text-secondary);
         border-radius: var(--radius-md);
         transition: all 0.2s;
