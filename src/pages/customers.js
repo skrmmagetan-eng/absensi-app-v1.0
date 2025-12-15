@@ -126,9 +126,6 @@ function renderCustomersList(customers) {
           <button class="btn btn-outline btn-icon" onclick="editCustomer('${customer.id}')" title="Edit">
             ✏️
           </button>
-          <button class="btn btn-danger btn-icon" onclick="deleteCustomer('${customer.id}', '${customer.name}')" title="Hapus">
-            🗑️
-          </button>
         </div>
       </div>
     </div>
