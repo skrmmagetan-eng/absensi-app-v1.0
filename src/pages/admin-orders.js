@@ -22,13 +22,13 @@ export async function renderAdminOrdersPage() {
         </div>
 
         <!-- Filter Tabs -->
-        <div class="card p-2 mb-md bg-tertiary flex gap-2 overflow-x-auto no-scrollbar" style="border-radius: var(--radius-full); display: inline-flex;">
-            <button class="btn btn-small ${currentFilter === 'all' ? 'btn-primary' : 'btn-ghost'}" onclick="filterOrders('all')">Semua</button>
-            <button class="btn btn-small ${currentFilter === 'pending' ? 'btn-warning' : 'btn-ghost'}" onclick="filterOrders('pending')">Pending</button>
-            <button class="btn btn-small ${currentFilter === 'approved' ? 'btn-primary' : 'btn-ghost'}" onclick="filterOrders('approved')">Disetujui</button>
-            <button class="btn btn-small ${currentFilter === 'loading' ? 'btn-primary' : 'btn-ghost'}" onclick="filterOrders('loading')">Di Muat</button>
-            <button class="btn btn-small ${currentFilter === 'shipped' ? 'btn-primary' : 'btn-ghost'}" onclick="filterOrders('shipped')">Di Kirim</button>
-            <button class="btn btn-small ${currentFilter === 'completed' ? 'btn-success' : 'btn-ghost'}" onclick="filterOrders('completed')">Selesai</button>
+        <div class="card p-2 mb-md bg-tertiary flex gap-2 overflow-x-auto no-scrollbar" style="border-radius: var(--radius-full); display: flex; white-space: nowrap; width: 100%;">
+            <button class="btn btn-small ${currentFilter === 'all' ? 'btn-primary' : 'btn-ghost'}" onclick="filterOrders('all')" style="flex-shrink: 0;">Semua</button>
+            <button class="btn btn-small ${currentFilter === 'pending' ? 'btn-warning' : 'btn-ghost'}" onclick="filterOrders('pending')" style="flex-shrink: 0;">Pending</button>
+            <button class="btn btn-small ${currentFilter === 'approved' ? 'btn-primary' : 'btn-ghost'}" onclick="filterOrders('approved')" style="flex-shrink: 0;">Disetujui</button>
+            <button class="btn btn-small ${currentFilter === 'loading' ? 'btn-primary' : 'btn-ghost'}" onclick="filterOrders('loading')" style="flex-shrink: 0;">Di Muat</button>
+            <button class="btn btn-small ${currentFilter === 'shipped' ? 'btn-primary' : 'btn-ghost'}" onclick="filterOrders('shipped')" style="flex-shrink: 0;">Di Kirim</button>
+            <button class="btn btn-small ${currentFilter === 'completed' ? 'btn-success' : 'btn-ghost'}" onclick="filterOrders('completed')" style="flex-shrink: 0;">Selesai</button>
         </div>
 
         <!-- Orders List -->
@@ -62,7 +62,7 @@ async function loadAdminOrders() {
         // Filter logic
         const filtered = currentFilter === 'all'
             ? orders
-            : orders.filter(o => o.status === currentFilter);
+            : orders.filter(o => (o.status || '').toLowerCase() === currentFilter.toLowerCase());
 
         if (filtered.length === 0) {
             container.innerHTML = `
