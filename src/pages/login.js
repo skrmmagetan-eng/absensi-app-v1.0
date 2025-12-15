@@ -163,12 +163,15 @@ async function handleLogin(e) {
 
     showNotification('Login berhasil!', 'success');
 
-    // Redirect based on role using hash navigation (immediate)
-    if (profile?.role === 'admin' || profile?.role === 'manager') {
-      window.location.hash = '#admin';
-    } else {
-      window.location.hash = '#dashboard';
-    }
+    // Small delay to ensure state is fully propagated before routing
+    setTimeout(() => {
+      // Redirect based on role using hash navigation (immediate)
+      if (profile?.role === 'admin' || profile?.role === 'manager') {
+        window.location.hash = '#admin';
+      } else {
+        window.location.hash = '#dashboard';
+      }
+    }, 100);
 
   } catch (err) {
     // Reset Button
