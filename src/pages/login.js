@@ -154,7 +154,7 @@ async function handleLogin(e) {
       console.warn('Profile fetch error:', profileError);
     }
 
-    // 3. Update State & Redirect
+    // 3. Update State
     state.updateState({
       user: authData.user,
       profile: profile || null,
@@ -163,15 +163,23 @@ async function handleLogin(e) {
 
     showNotification('Login berhasil!', 'success');
 
-    // Small delay to ensure state is fully propagated before routing
-    setTimeout(() => {
-      // Redirect based on role using hash navigation (immediate)
-      if (profile?.role === 'admin' || profile?.role === 'manager') {
-        window.location.hash = '#admin';
-      } else {
-        window.location.hash = '#dashboard';
+    // Determine target page
+    const targetHash = (profile?.role === 'admin' || profile?.role === 'manager')
+      ? '#admin'
+      : '#dashboard';
+
+    // Force navigation by setting hash and manually triggering routing
+    window.location.hash = targetHash;
+
+    // Force immediate re-render by calling handleRouting manually
+    // This ensures the page loads without waiting for hashchange event
+    setTimeout(async () => {
+      const hash = window.location.hash.replace('#', '');
+      const handler = window.appRoutes?.[hash];
+      if (handler) {
+        await handler();
       }
-    }, 100);
+    }, 50);
 
   } catch (err) {
     // Reset Button

@@ -41,6 +41,9 @@ const routes = {
   'riwayat': renderHistoryPage,
 };
 
+// Expose routes globally for manual routing from login
+window.appRoutes = routes;
+
 // Router Helper
 async function handleRouting() {
   const hash = window.location.hash.replace('#', '') || '';
