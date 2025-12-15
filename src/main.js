@@ -128,8 +128,11 @@ if ('serviceWorker' in navigator) {
       .then((registration) => {
         console.log('ServiceWorker registered:', registration.scope);
 
-        // Check for updates periodically (optional)
-        // setInterval(() => { registration.update(); }, 60 * 60 * 1000);
+        // Check for updates periodically (every 15 minutes)
+        setInterval(() => {
+          console.log('Checking for PWA updates...');
+          registration.update();
+        }, 15 * 60 * 1000);
 
         // Check if there's already a waiting worker (update ready but waiting)
         if (registration.waiting) {
@@ -164,9 +167,9 @@ function showUpdateNotification(worker) {
   toast.className = 'update-toast';
   toast.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
-            <span>🚀 Update baru tersedia!</span>
+            <span>✨ Aplikasi versi baru tersedia</span>
             <button id="reload-btn" class="btn btn-small btn-primary" style="padding: 4px 10px; font-size: 0.8rem;">
-               Update
+               Update Sekarang
             </button>
         </div>
     `;
