@@ -28,7 +28,7 @@ export async function renderAdminHistoryPage() {
       <div class="container">
         <div class="mb-lg">
           <h1>📋 Riwayat Seluruh User</h1>
-          <p style="color: var(--text-muted);">Pantau aktivitas kunjungan dan order tim Anda</p>
+          <p style="color: var(--text-muted);">Pantau aktivitas kunjungan dan omset tim Anda</p>
         </div>
 
         <!-- Filters Section -->
@@ -63,7 +63,7 @@ export async function renderAdminHistoryPage() {
                 📍 Kunjungan
             </button>
             <button class="btn btn-small ${currentTab === 'orders' ? 'btn-primary' : 'btn-ghost'}" id="tab-orders">
-                📦 Order Barang
+                📦 Omset Barang
             </button>
         </div>
 

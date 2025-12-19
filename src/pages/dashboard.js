@@ -46,7 +46,7 @@ export async function renderDashboardPage() {
             <div class="stat-header">
               <div class="stat-icon">📦</div>
               <div class="stat-details">
-                <div class="stat-label">Order Bulan Ini</div>
+                <div class="stat-label">Omset Bulan Ini</div>
                 <div class="stat-value" id="total-orders">-</div>
               </div>
             </div>
@@ -79,7 +79,7 @@ export async function renderDashboardPage() {
             </button>
             <button class="btn btn-outline" onclick="window.location.hash='#order/baru'">
               <span>📦</span>
-              <span>Buat Order</span>
+              <span>Input Omset</span>
             </button>
             <button class="btn btn-outline" onclick="window.location.hash='#katalog'">
               <span>🛍️</span>

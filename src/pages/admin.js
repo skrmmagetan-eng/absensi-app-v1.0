@@ -65,7 +65,7 @@ export async function renderAdminDashboard() {
             </button>
             <button class="btn btn-success" onclick="window.location.hash='#admin/orders'">
               <span>📦</span>
-              <span>Lihat Semua Order</span>
+              <span>Lihat Semua Omset</span>
             </button>
             <button class="btn btn-outline" onclick="window.location.hash='#admin/katalog'">
               <span>🛍️</span>
@@ -110,12 +110,12 @@ export async function renderAdminDashboard() {
           </div>
         </div>
 
-        <!-- Recent Activities / Orders -->
+        <!-- Recent Activities / Omset -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-md">
-           <!-- Latest Orders -->
+           <!-- Latest Omset -->
            <div class="card">
              <div class="card-header">
-               <h3 class="card-title">Order Terbaru</h3>
+               <h3 class="card-title">Omset Terbaru</h3>
              </div>
              <div id="latest-orders-list"></div>
            </div>

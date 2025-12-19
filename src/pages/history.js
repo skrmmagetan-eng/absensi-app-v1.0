@@ -15,7 +15,7 @@ export async function renderHistoryPage() {
       <div class="container">
         <div class="mb-lg">
           <h1>📜 Riwayat Aktivitas</h1>
-          <p style="color: var(--text-muted);">Jejak kunjungan dan pesanan Anda</p>
+          <p style="color: var(--text-muted);">Jejak kunjungan dan omset Anda</p>
         </div>
 
         <!-- Tabs -->
@@ -24,7 +24,7 @@ export async function renderHistoryPage() {
                 📍 Kunjungan
             </button>
             <button class="btn btn-small ${currentTab === 'orders' ? 'btn-primary' : 'btn-ghost'}" id="tab-orders">
-                📦 Order Barang
+                📦 Omset Barang
             </button>
         </div>
 

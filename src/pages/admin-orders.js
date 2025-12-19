@@ -15,8 +15,8 @@ export async function renderAdminOrdersPage() {
       <div class="container">
         <div class="mb-lg flex justify-between items-center">
             <div>
-                <h1>📦 Kelola Pesanan</h1>
-                <p style="color: var(--text-muted);">Verifikasi dan update status pesanan pelanggan</p>
+                <h1>📦 Kelola Omset</h1>
+                <p style="color: var(--text-muted);">Verifikasi dan update status omset pelanggan</p>
             </div>
             <button class="btn btn-outline" onclick="window.location.reload()">🔄 Refresh</button>
         </div>
@@ -165,7 +165,7 @@ async function handleUpdateStatus(btnElement, orderId, newStatus) {
     else if (nextStatus === 'shipped') {
         const resi = prompt('🚚 Masukkan Resi / Info Pengiriman (Opsional):');
         if (resi) {
-            appendNote = `\n[Admin - ${formatDate(new Date())}]: Order dikirim. Info: ${resi}`;
+            appendNote = `\n[Admin - ${formatDate(new Date())}]: Omset dikirim. Info: ${resi}`;
         }
     }
     else if (nextStatus === 'approved') {
@@ -173,7 +173,7 @@ async function handleUpdateStatus(btnElement, orderId, newStatus) {
     }
     else if (nextStatus === 'completed') {
         if (!confirm('Tandai pesanan sebagai SELESAI?')) return;
-        appendNote = `\n[System]: Order selesai pada ${formatDate(new Date())}`;
+        appendNote = `\n[System]: Omset selesai pada ${formatDate(new Date())}`;
     }
     else {
         if (!confirm(`Update status pesanan ke "${newStatus}"?`)) return;

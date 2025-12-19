@@ -109,7 +109,7 @@ function getEmployeeLinks() {
        <span style="width:24px;">👥</span> Pelanggan
     </a>
     <a href="#order" class="nav-link ${currentPath.includes('order') ? 'active' : ''}">
-       <span style="width:24px;">📦</span> Order
+       <span style="width:24px;">📦</span> Omset
     </a>
     <a href="#katalog" class="nav-link ${currentPath.includes('katalog') ? 'active' : ''}">
        <span style="width:24px;">🛍️</span> Katalog
@@ -133,7 +133,7 @@ function getAdminLinks() {
        <span style="width:24px;">👥</span> Karyawan
     </a>
     <a href="#admin/orders" class="nav-link ${currentPath.includes('orders') ? 'active' : ''}">
-       <span style="width:24px;">📦</span> Order Masuk
+       <span style="width:24px;">📦</span> Omset Masuk
     </a>
     <a href="#admin/katalog" class="nav-link ${currentPath.includes('katalog') ? 'active' : ''}">
        <span style="width:24px;">🛍️</span> Katalog

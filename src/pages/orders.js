@@ -14,12 +14,12 @@ export async function renderOrderPage() {
       <div class="container">
         <div class="flex justify-between items-center mb-lg">
           <div>
-            <h1>📦 Order Barang</h1>
+                <h1>📦 Riwayat Omset</h1>
             <p style="color: var(--text-muted);">Kelola pesanan pelanggan</p>
           </div>
           <button class="btn btn-primary" onclick="window.location.hash='#order/baru'">
             <span>➕</span>
-            <span>Buat Order Baru</span>
+            <span>Input Omset Baru</span>
           </button>
         </div>
 
@@ -57,7 +57,7 @@ export async function renderCreateOrderPage() {
 
         <div class="card-glass">
           <div class="card-header">
-            <h2 class="card-title">📝 Buat Order Baru</h2>
+            <h2 class="card-title">📝 Input Omset Baru</h2>
           </div>
 
           <form id="order-form">
@@ -97,12 +97,12 @@ export async function renderCreateOrderPage() {
 
             <!-- Notes -->
             <div class="form-group">
-              <label class="form-label" for="notes">Catatan Order</label>
+              <label class="form-label" for="notes">Catatan Pesanan</label>
               <textarea id="notes" class="form-textarea" placeholder="Instruksi pengiriman, dll..."></textarea>
             </div>
 
             <button type="submit" class="btn btn-primary w-full" id="btn-submit-order">
-              Kirim Order
+              Kirim Data Omset
             </button>
           </form>
         </div>
@@ -141,7 +141,7 @@ async function loadOrders() {
     renderOrdersList(orders, container);
   } catch (err) {
     hideLoading();
-    showNotification('Gagal memuat order', 'danger');
+    showNotification('Gagal memuat data omset', 'danger');
     console.error(err);
   }
 }
@@ -164,7 +164,7 @@ function renderOrdersList(orders, container) {
       <div class="flex justify-between items-start mb-sm">
         <div>
           <h4 class="mb-0 text-primary">${order.customers?.name || 'Pelanggan Dihapus'}</h4>
-          <span class="text-muted text-small">Order #${order.id.slice(0, 8)} • ${formatDate(order.created_at)}</span>
+          <span class="text-muted text-small">ID Pesanan: #${order.id.slice(0, 8)} • ${formatDate(order.created_at)}</span>
         </div>
         <div class="text-right">
              <span class="badge badge-${getStatusBadgeColor(order.status)}">${getStatusLabel(order.status)}</span>
@@ -380,7 +380,7 @@ async function handleOrderSubmit(e) {
     btnSubmit.innerHTML = `<span>⏳</span> Mengirim...`;
   }
 
-  showLoading('Mengirim order...');
+  showLoading('Mengirim data omset...');
 
   try {
     const orderData = {
@@ -397,7 +397,7 @@ async function handleOrderSubmit(e) {
     hideLoading();
     if (error) throw error;
 
-    showNotification('Order berhasil dibuat! 🚀', 'success');
+    showNotification('Data Omset berhasil dikirim! 🚀', 'success');
     setTimeout(() => {
       window.location.hash = '#order';
     }, 1000);
@@ -412,6 +412,6 @@ async function handleOrderSubmit(e) {
     }
 
     console.error('Order error:', error);
-    showNotification('Gagal membuat order: ' + error.message, 'danger');
+    showNotification('Gagal mengirim omset: ' + error.message, 'danger');
   }
 }
