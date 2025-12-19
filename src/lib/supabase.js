@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import { compressImage } from '../utils/helpers.js';
 
 // TODO: Ganti dengan kredensial Supabase Anda
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL').trim();
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

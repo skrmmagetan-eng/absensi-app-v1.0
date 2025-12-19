@@ -202,9 +202,12 @@ async function handleLogin(e) {
     // Show friendly error
     let msg = 'Terjadi kesalahan sistem';
     if (err.message === 'Invalid login credentials') msg = 'Email atau password salah';
+    else if (err.message?.toLowerCase().includes('fetch')) {
+      msg = 'Gagal terhubung ke server. Periksa koneksi internet atau matikan AdBlock/Tracking Prevention di browser Anda.';
+    }
     else if (err.message) msg = err.message;
 
     showNotification(msg, 'danger');
-    console.error('Login error:', err);
+    console.error('Login error details:', err);
   }
 }

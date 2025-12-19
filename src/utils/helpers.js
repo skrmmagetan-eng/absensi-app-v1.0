@@ -196,10 +196,12 @@ export const storage = {
         }
     },
 
-    // Credentials local storage (Remember Me)
+    // Credentials local storage (Remember Me) - Safely handle UTF-8
     saveCredentials(email, password) {
         try {
-            const data = btoa(JSON.stringify({ email, password }));
+            // Encode to base64 safely for UTF-8 characters (like emojis/special chars)
+            const json = JSON.stringify({ email, password });
+            const data = btoa(unescape(encodeURIComponent(json)));
             localStorage.setItem('auth_cache', data);
         } catch (e) { console.error('Storage error', e); }
     },
@@ -208,7 +210,7 @@ export const storage = {
         try {
             const data = localStorage.getItem('auth_cache');
             if (!data) return null;
-            return JSON.parse(atob(data));
+            return JSON.parse(decodeURIComponent(escape(atob(data))));
         } catch (e) { return null; }
     },
 
