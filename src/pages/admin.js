@@ -284,10 +284,7 @@ function renderKPITable(data) {
   tbody.innerHTML = data.map(row => `
     <tr onclick="window.filterDashboardByEmployee('${row.user_id}', '${row.user_name}')" style="cursor: pointer;" title="Klik untuk filter histori & omset">
       <td>
-        <div class="flex items-center gap-2">
-            <strong>${row.user_name}</strong>
-            <button class="btn btn-icon btn-ghost btn-small" onclick="event.stopPropagation(); window.location.hash='#admin/histori?user_id=${row.user_id}'" title="Lihat detail riwayat">📋</button>
-        </div>
+        <strong>${row.user_name}</strong><br>
         <small class="text-muted">Total: ${formatCurrency(row.total_sales)}</small>
       </td>
       <td class="text-center">
