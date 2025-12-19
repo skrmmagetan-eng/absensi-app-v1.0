@@ -117,6 +117,9 @@ function getEmployeeLinks() {
     <a href="#riwayat" class="nav-link ${currentPath === 'riwayat' ? 'active' : ''}">
        <span style="width:24px;">📅</span> Riwayat
     </a>
+    <a href="#targets" class="nav-link ${currentPath === 'targets' ? 'active' : ''}">
+       <span style="width:24px;">🎯</span> Target Saya
+    </a>
   `;
 }
 
@@ -137,6 +140,9 @@ function getAdminLinks() {
     </a>
     <a href="#admin/settings" class="nav-link ${currentPath.includes('settings') ? 'active' : ''}">
        <span style="width:24px;">⚙️</span> Pengaturan
+    </a>
+    <a href="#admin/targets" class="nav-link ${currentPath.includes('targets') ? 'active' : ''}">
+       <span style="width:24px;">🎯</span> Monitor Target
     </a>
   `;
 }

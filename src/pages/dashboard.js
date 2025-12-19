@@ -87,7 +87,11 @@ export async function renderDashboardPage() {
             </button>
             <button class="btn btn-outline" onclick="window.location.hash='#riwayat'">
               <span>📊</span>
-              <span>Lihat Riwayat</span>
+              <span>Riwayat</span>
+            </button>
+            <button class="btn btn-outline" onclick="window.location.hash='#targets'">
+              <span>🎯</span>
+              <span>Target Saya</span>
             </button>
           </div>
         </div>

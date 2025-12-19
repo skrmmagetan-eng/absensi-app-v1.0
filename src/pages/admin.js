@@ -71,6 +71,14 @@ export async function renderAdminDashboard() {
               <span>🛍️</span>
               <span>Kelola Katalog</span>
             </button>
+            <button class="btn btn-outline" onclick="window.location.hash='#admin/histori'">
+              <span>📜</span>
+              <span>Riwayat Aktivitas</span>
+            </button>
+            <button class="btn btn-outline" onclick="window.location.hash='#admin/targets'">
+              <span>🎯</span>
+              <span>Target Tim</span>
+            </button>
             <button class="btn btn-outline" onclick="window.location.hash='#admin/settings'">
               <span>⚙️</span>
               <span>Pengaturan</span>
@@ -91,7 +99,7 @@ export async function renderAdminDashboard() {
                   <th>Karyawan</th>
                   <th class="text-center">Kunjungan</th>
                   <th class="text-center">Pelanggan Baru</th>
-                  <th class="text-center">Order</th>
+                  <th class="text-center">Omset</th>
                   <th>Skor KPI</th>
                 </tr>
               </thead>
@@ -186,6 +194,7 @@ async function loadAdminData() {
           let score = Math.min(100, (visitCount * 2) + (newCustCount * 10) + (orderCount * 5));
 
           return {
+            user_id: emp.id,
             user_name: emp.name,
             visit_count: visitCount,
             new_customer_count: newCustCount,
@@ -198,6 +207,9 @@ async function loadAdminData() {
     }
 
     // 4. Update UI with Stats (Source is either RPC or Fallback)
+    // SORT BY SCORE DESCENDING
+    kpiStats.sort((a, b) => b.score - a.score);
+
     const totalRev = kpiStats.reduce((sum, k) => sum + (Number(k.total_sales) || 0), 0);
     const totalNewCust = kpiStats.reduce((sum, k) => sum + (Number(k.new_customer_count) || 0), 0);
 
@@ -229,7 +241,7 @@ function renderKPITable(data) {
   }
 
   tbody.innerHTML = data.map(row => `
-    <tr>
+    <tr onclick="window.location.hash='#admin/histori?user_id=${row.user_id}'" style="cursor: pointer;">
       <td>
         <strong>${row.user_name}</strong><br>
         <small class="text-muted">Sales: ${formatCurrency(row.total_sales)}</small>

@@ -379,6 +379,43 @@ export const db = {
             });
         return { data, error };
     },
+
+    // Sales Plans / Targeting
+    async getSalesPlans(userId) {
+        const { data, error } = await supabase
+            .from('sales_plans')
+            .select('*')
+            .eq('employee_id', userId)
+            .order('created_at', { ascending: false });
+        return { data, error };
+    },
+
+    async getAllSalesPlans() {
+        const { data, error } = await supabase
+            .from('sales_plans')
+            .select('*, users(name)')
+            .order('created_at', { ascending: false });
+        return { data, error };
+    },
+
+    async createSalesPlan(data) {
+        const { data: result, error } = await supabase
+            .from('sales_plans')
+            .insert([data])
+            .select()
+            .single();
+        return { data: result, error };
+    },
+
+    async updateSalesPlan(id, updates) {
+        const { data: result, error } = await supabase
+            .from('sales_plans')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+        return { data: result, error };
+    },
 };
 
 export default supabase;

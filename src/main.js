@@ -19,6 +19,9 @@ import { renderAdminCatalogPage } from './pages/admin-catalog.js';
 import { renderAdminOrdersPage } from './pages/admin-orders.js';
 import { renderCatalogPage } from './pages/catalog.js';
 import { renderHistoryPage } from './pages/history.js';
+import { renderAdminHistoryPage } from './pages/admin-history.js';
+import { renderTargetsPage } from './pages/targets.js';
+import { renderAdminTargetsPage } from './pages/admin-targets.js';
 
 // Define Routes (using hash routing for simplicity in SPA without specific server config)
 const routes = {
@@ -29,7 +32,8 @@ const routes = {
   'admin/settings': renderAdminSettingsPage,
   'admin/karyawan': renderAdminEmployeesPage,
   'admin/katalog': renderAdminCatalogPage,
-  'admin/orders': renderAdminOrdersPage, // New Route
+  'admin/orders': renderAdminOrdersPage,
+  'admin/histori': renderAdminHistoryPage,
   'check-in': renderCheckInPage,
 
 
@@ -39,6 +43,8 @@ const routes = {
   'katalog': renderCatalogPage, // Halaman katalog untuk karyawan
   'order/baru': renderCreateOrderPage,
   'riwayat': renderHistoryPage,
+  'targets': renderTargetsPage,
+  'admin/targets': renderAdminTargetsPage,
 };
 
 // Expose routes globally for manual routing from login
