@@ -114,10 +114,20 @@ export async function renderAdminDashboard() {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-md">
            <!-- Latest Omset -->
            <div class="card">
-             <div class="card-header">
-               <h3 class="card-title">Omset Terbaru</h3>
+             <div class="card-header flex justify-between items-center">
+               <h3 class="card-title" id="orders-widget-title">Omset Terbaru</h3>
+               <span class="badge badge-outline" id="orders-filter-label" style="display:none;">Semua Staff</span>
              </div>
              <div id="latest-orders-list"></div>
+           </div>
+
+           <!-- Latest Visits (History) -->
+           <div class="card">
+             <div class="card-header flex justify-between items-center">
+               <h3 class="card-title" id="visits-widget-title">Kunjungan Terbaru</h3>
+               <span class="badge badge-outline" id="visits-filter-label" style="display:none;">Semua Staff</span>
+             </div>
+             <div id="latest-visits-list"></div>
            </div>
         </div>
       </div>
@@ -220,12 +230,43 @@ async function loadAdminData() {
 
     renderKPITable(kpiStats);
 
-    // 5. Load Latest Orders for Widget
-    // Just take the first 5 from the raw fetch if we did it, or fetch again. 
-    // For simplicity, fetch is cheap or browser cache might help, but let's just call db.getOrders() if we didn't already.
-    // Actually we can just call it independently.
+    // 5. Load Initial Data for Widgets
     const { data: recentOrders } = await db.getOrders();
-    renderLatestOrders(recentOrders ? recentOrders.slice(0, 5) : []);
+    const { data: recentVisits } = await db.getAllAttendance();
+
+    // Store in window for global access/filtering
+    window._allRecentOrders = recentOrders || [];
+    window._allRecentVisits = recentVisits || [];
+
+    renderLatestOrders(window._allRecentOrders.slice(0, 10));
+    renderLatestVisits(window._allRecentVisits.slice(0, 10));
+
+    // Global filtering function
+    window.filterDashboardByEmployee = (employeeId, employeeName) => {
+      const orderLabel = document.getElementById('orders-filter-label');
+      const visitLabel = document.getElementById('visits-filter-label');
+
+      if (employeeId === 'all') {
+        orderLabel.style.display = 'none';
+        visitLabel.style.display = 'none';
+        renderLatestOrders(window._allRecentOrders.slice(0, 10));
+        renderLatestVisits(window._allRecentVisits.slice(0, 10));
+      } else {
+        orderLabel.style.display = 'inline-block';
+        orderLabel.textContent = employeeName;
+        visitLabel.style.display = 'inline-block';
+        visitLabel.textContent = employeeName;
+
+        const filteredOrders = window._allRecentOrders.filter(o => o.employee_id === employeeId);
+        const filteredVisits = window._allRecentVisits.filter(v => v.employee_id === employeeId);
+
+        renderLatestOrders(filteredOrders.slice(0, 10));
+        renderLatestVisits(filteredVisits.slice(0, 10));
+      }
+
+      // Scroll to gadgets for better UX
+      document.getElementById('latest-orders-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
   } catch (error) {
     console.error('Admin Load Error:', error);
@@ -241,10 +282,13 @@ function renderKPITable(data) {
   }
 
   tbody.innerHTML = data.map(row => `
-    <tr onclick="window.location.hash='#admin/histori?user_id=${row.user_id}'" style="cursor: pointer;">
+    <tr onclick="window.filterDashboardByEmployee('${row.user_id}', '${row.user_name}')" style="cursor: pointer;" title="Klik untuk filter histori & omset">
       <td>
-        <strong>${row.user_name}</strong><br>
-        <small class="text-muted">Sales: ${formatCurrency(row.total_sales)}</small>
+        <div class="flex items-center gap-2">
+            <strong>${row.user_name}</strong>
+            <button class="btn btn-icon btn-ghost btn-small" onclick="event.stopPropagation(); window.location.hash='#admin/histori?user_id=${row.user_id}'" title="Lihat detail riwayat">📋</button>
+        </div>
+        <small class="text-muted">Total: ${formatCurrency(row.total_sales)}</small>
       </td>
       <td class="text-center">
          <span class="badge badge-outline">${row.visit_count}</span>
@@ -269,20 +313,43 @@ function renderKPITable(data) {
 
 function renderLatestOrders(orders) {
   const container = document.getElementById('latest-orders-list');
-  if (!orders.length) {
-    container.innerHTML = '<p class="text-muted text-center">Belum ada order masuk.</p>';
+  if (!orders || orders.length === 0) {
+    container.innerHTML = '<div class="p-lg text-center text-muted">Belum ada data omset.</div>';
     return;
   }
 
   container.innerHTML = orders.map(o => `
-    <div class="flex justify-between items-center p-2 border-bottom">
+    <div class="flex justify-between items-center p-md border-bottom hover-bg">
       <div>
-        <div style="font-weight: 500;">${o.customers?.name || 'Unknown'}</div>
-        <small class="text-muted">by ${o.users?.name || 'Staff'}</small>
+        <div class="font-bold text-sm">${o.customers?.name || 'Pelanggan'}</div>
+        <div class="text-xs text-muted">oleh ${o.users?.name || 'User'} • ${o.status}</div>
       </div>
       <div class="text-right">
-        <div style="font-weight: 600;">${formatCurrency(o.total_amount)}</div>
-        <span class="badge badge-small badge-outline">${o.status}</span>
+        <div class="font-bold text-primary">${formatCurrency(o.total_amount)}</div>
+        <div class="text-xs text-muted">${new Date(o.created_at).toLocaleDateString('id-ID')}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderLatestVisits(visits) {
+  const container = document.getElementById('latest-visits-list');
+  if (!visits || visits.length === 0) {
+    container.innerHTML = '<div class="p-lg text-center text-muted">Belum ada data kunjungan.</div>';
+    return;
+  }
+
+  container.innerHTML = visits.map(v => `
+    <div class="flex justify-between items-center p-md border-bottom hover-bg">
+      <div>
+        <div class="font-bold text-sm">${v.customers?.name || 'Pelanggan'}</div>
+        <div class="text-xs text-muted">oleh ${v.users?.name || 'User'}</div>
+      </div>
+      <div class="text-right">
+        <div class="badge ${v.check_out_time ? 'badge-success' : 'badge-warning'} badge-small">
+            ${v.check_out_time ? 'Selesai' : 'Aktif'}
+        </div>
+        <div class="text-xs text-muted mt-1">${new Date(v.check_in_time).toLocaleDateString('id-ID')}</div>
       </div>
     </div>
   `).join('');

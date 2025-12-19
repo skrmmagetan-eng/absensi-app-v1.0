@@ -135,14 +135,11 @@ function getAdminLinks() {
     <a href="#admin/orders" class="nav-link ${currentPath.includes('orders') ? 'active' : ''}">
        <span style="width:24px;">📦</span> Omset Masuk
     </a>
-    <a href="#admin/katalog" class="nav-link ${currentPath.includes('katalog') ? 'active' : ''}">
-       <span style="width:24px;">🛍️</span> Katalog
+    <a href="#admin/targets" class="nav-link ${currentPath.includes('targets') ? 'active' : ''}">
+       <span style="width:24px;">🎯</span> Monitor Target
     </a>
     <a href="#admin/settings" class="nav-link ${currentPath.includes('settings') ? 'active' : ''}">
        <span style="width:24px;">⚙️</span> Pengaturan
-    </a>
-    <a href="#admin/targets" class="nav-link ${currentPath.includes('targets') ? 'active' : ''}">
-       <span style="width:24px;">🎯</span> Monitor Target
     </a>
   `;
 }
