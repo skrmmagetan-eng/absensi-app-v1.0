@@ -392,6 +392,17 @@ a:hover {
   border-radius: var(--radius-full);
 }
 
+.btn-ghost {
+  background: transparent !important;
+  color: var(--text-primary);
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.btn-ghost:hover {
+  background: rgba(128, 128, 128, 0.1) !important;
+}
+
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -475,6 +486,21 @@ a:hover {
 
 #sidebar-toggle-btn {
   display: none;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 8px;
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] #sidebar-toggle-btn {
+  color: #cbd5e1 !important;
+  /* Abu-abu terang */
+}
+
+[data-theme="light"] #sidebar-toggle-btn {
+  color: #4b5563 !important;
+  /* Abu-abu gelap */
 }
 
 @media (max-width: 768px) {

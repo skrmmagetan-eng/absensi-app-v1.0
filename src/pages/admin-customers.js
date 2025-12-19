@@ -1,7 +1,8 @@
 import { db } from '../lib/supabase.js';
 import { state } from '../lib/router.js';
 import { renderNavbar } from '../components/navigation.js';
-import { showLoading, hideLoading, showNotification, formatDate } from '../utils/helpers.js';
+import { showLoading, hideLoading, showNotification, formatDate, createModal, geo } from '../utils/helpers.js';
+import L from 'leaflet';
 
 let allCustomers = [];
 let employees = [];
@@ -116,9 +117,12 @@ function renderList(list) {
                         </div>
                     </div>
                 </div>
-                <div class="text-right">
+                <div class="text-right flex flex-col items-end gap-2">
                     <div class="text-sm font-bold">${c.phone || '-'}</div>
-                    <button class="btn btn-ghost btn-small mt-2" onclick="window.location.hash='#admin/histori?user_id=${c.employee_id}'">📊 Cek Aktivitas</button>
+                    <div class="flex gap-2">
+                        <button class="btn btn-primary btn-small" onclick="window.viewCustomerMap('${c.id}')">📍 Lokasi</button>
+                        <button class="btn btn-outline btn-small" onclick="window.location.hash='#admin/histori?user_id=${c.employee_id}'">📊 Histori</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -137,3 +141,35 @@ function applyFilters() {
 
     renderList(filtered);
 }
+
+window.viewCustomerMap = async (customerId) => {
+    const customer = allCustomers.find(c => c.id === customerId);
+    if (!customer) return;
+
+    if (!customer.latitude || !customer.longitude) {
+        showNotification('Pelanggan ini tidak memiliki koordinat lokasi.', 'warning');
+        return;
+    }
+
+    await createModal(
+        `📍 Lokasi: ${customer.name}`,
+        `
+        <div id="admin-customer-map" style="height: 350px; width: 100%; border-radius: 12px;"></div>
+        <div class="mt-md">
+            <p class="text-sm"><strong>Alamat:</strong><br>${customer.address}</p>
+            <p class="text-xs text-muted mt-2">Koordinat: ${customer.latitude}, ${customer.longitude}</p>
+        </div>
+        `,
+        [{ label: 'Tutup', action: 'close', type: 'outline' }]
+    );
+
+    // Initialize map after modal is in DOM
+    const map = L.map('admin-customer-map').setView([customer.latitude, customer.longitude], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    L.marker([customer.latitude, customer.longitude]).addTo(map)
+        .bindPopup(`<strong>${customer.name}</strong><br>${customer.address}`)
+        .openPopup();
+};
