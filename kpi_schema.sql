@@ -33,9 +33,9 @@ begin
   select 
     u.id,
     u.name,
-    -- 1. Hitung Survey (Kunjungan)
-    (select count(*) from customer_visits v 
-     where v.user_id = u.id and v.created_at between start_date and end_date) as visit_count,
+    -- 1. Hitung Absensi (Check-in Kunjungan)
+    (select count(*) from attendance a 
+     where a.employee_id = u.id and a.check_in_time between start_date and end_date) as visit_count,
      
     -- 2. Hitung Pelanggan Baru (New Acquisition)
     (select count(*) from customers c 
@@ -49,14 +49,12 @@ begin
        where o.employee_id = u.id and o.created_at between start_date and end_date), 
     0) as total_sales,
 
-    -- Rumus Skor Sederhana (Bisa disesuaikan): 
-    -- (Visits * 5) + (New Cust * 15) + (Orders * 10) + (Sales / 100000)
-    -- Dibatasi max 100
+    -- Rumus Skor Sederhana: (Visits * 2) + (New Cust * 10) + (Orders * 5)
     least(100, 
       (
-        (select count(*) from customer_visits v where v.user_id = u.id and v.created_at between start_date and end_date) * 2 +
-        (select count(*) from customers c where c.employee_id = u.id and c.created_at between start_date and end_date) * 10 +
-        (select count(*) from orders o where o.employee_id = u.id and o.created_at between start_date and end_date) * 5
+        ((select count(*) from attendance a where a.employee_id = u.id and a.check_in_time between start_date and end_date) * 2) +
+        ((select count(*) from customers c where c.employee_id = u.id and c.created_at between start_date and end_date) * 10) +
+        ((select count(*) from orders o where o.employee_id = u.id and o.created_at between start_date and end_date) * 5)
       )::numeric
     ) as score
 

@@ -54,61 +54,35 @@ export async function renderAdminDashboard() {
         </div>
 
         <!-- Quick Actions for Admin -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-lg">
-          <div class="card md:col-span-2">
-            <div class="card-header">
-              <h3 class="card-title">⚡ Aksi Cepat</h3>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem;">
-              <button class="btn btn-primary" onclick="window.location.hash='#admin/karyawan'">
-                <span>👥</span>
-                <span>Karyawan</span>
-              </button>
-              <button class="btn btn-success" onclick="window.location.hash='#admin/orders'">
-                <span>📦</span>
-                <span>Omset</span>
-              </button>
-              <button class="btn btn-outline" onclick="window.location.hash='#admin/katalog'">
-                <span>🛍️</span>
-                <span>Katalog</span>
-              </button>
-              <button class="btn btn-outline" onclick="window.location.hash='#admin/histori'">
-                <span>📜</span>
-                <span>Aktivitas</span>
-              </button>
-              <button class="btn btn-outline" onclick="window.location.hash='#admin/targets'">
-                <span>🎯</span>
-                <span>Target</span>
-              </button>
-              <button class="btn btn-outline" onclick="window.location.hash='#admin/settings'">
-                <span>⚙️</span>
-                <span>Settings</span>
-              </button>
-            </div>
+        <div class="card mb-lg">
+          <div class="card-header">
+            <h3 class="card-title">⚡ Aksi Cepat</h3>
           </div>
-
-          <!-- Security Status Card -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">🛡️ Status Keamanan</h3>
-            </div>
-            <div class="flex flex-col gap-sm">
-              <div class="flex justify-between items-center text-sm">
-                <span>Row Level Security</span>
-                <span class="badge badge-success">AKTIF</span>
-              </div>
-              <div class="flex justify-between items-center text-sm">
-                <span>Data Encryption</span>
-                <span class="badge badge-success">AKTIF</span>
-              </div>
-              <div class="flex justify-between items-center text-sm">
-                <span>Admin Reroute Guard</span>
-                <span class="badge badge-success">AKTIF</span>
-              </div>
-              <div class="mt-md p-sm bg-tertiary rounded-md text-xs text-muted">
-                DILINDUNGI: Database terproteksi dengan enkripsi TLS/SSL.
-              </div>
-            </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem;">
+            <button class="btn btn-primary" onclick="window.location.hash='#admin/karyawan'">
+              <span>👥</span>
+              <span>Karyawan</span>
+            </button>
+            <button class="btn btn-success" onclick="window.location.hash='#admin/orders'">
+              <span>📦</span>
+              <span>Omset</span>
+            </button>
+            <button class="btn btn-outline" onclick="window.location.hash='#admin/katalog'">
+              <span>🛍️</span>
+              <span>Katalog</span>
+            </button>
+            <button class="btn btn-outline" onclick="window.location.hash='#admin/histori'">
+              <span>📜</span>
+              <span>Aktivitas</span>
+            </button>
+            <button class="btn btn-outline" onclick="window.location.hash='#admin/targets'">
+              <span>🎯</span>
+              <span>Target</span>
+            </button>
+            <button class="btn btn-outline" onclick="window.location.hash='#admin/settings'">
+              <span>⚙️</span>
+              <span>Settings</span>
+            </button>
           </div>
         </div>
 
@@ -188,18 +162,19 @@ async function loadAdminData() {
     // actually if RPC succeeds but returns empty, that's valid. Only if RPC FAILS (error).
     if (rpcError) {
       // FETCH RAW DATA for client-side aggregation
-      const [ordersRes, customersRes] = await Promise.all([
+      const [ordersRes, customersRes, attendanceRes] = await Promise.all([
         db.getOrders(),
-        db.getCustomers()
+        db.getCustomers(),
+        db.getAllAttendance()
       ]);
 
       const allOrders = ordersRes.data || [];
       const allCustomers = customersRes.data || [];
+      const allAttendance = attendanceRes.data || [];
 
       // Filter for this month
       const startDt = new Date(start);
       const endDt = new Date(end);
-      // Adjust endDt to end of day
       endDt.setHours(23, 59, 59, 999);
 
       const periodOrders = allOrders.filter(o => {
@@ -209,6 +184,11 @@ async function loadAdminData() {
 
       const periodCustomers = allCustomers.filter(c => {
         const d = new Date(c.created_at);
+        return d >= startDt && d <= endDt;
+      });
+
+      const periodAttendance = allAttendance.filter(a => {
+        const d = new Date(a.check_in_time);
         return d >= startDt && d <= endDt;
       });
 
@@ -222,11 +202,9 @@ async function loadAdminData() {
           const totalSales = empOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
           const newCustCount = empCust.length;
 
-          // Visit count is 0 if table missing/RPC failed
-          const visitCount = 0;
+          const visitCount = periodAttendance.filter(a => a.employee_id === emp.id).length;
 
-          // Calculate Score
-          // (Visits * 2) + (New Cust * 10) + (Orders * 5)
+          // Calculate Score: (Visits * 2) + (New Cust * 10) + (Orders * 5)
           let score = Math.min(100, (visitCount * 2) + (newCustCount * 10) + (orderCount * 5));
 
           return {
