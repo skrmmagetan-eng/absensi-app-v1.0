@@ -163,9 +163,6 @@
         transition: all 0.3s ease;
     }
 
-    .navbar-brand span:first-child {
-        display: inline-block;
-    }
 
     .sidebar-overlay.active {
         opacity: 1;

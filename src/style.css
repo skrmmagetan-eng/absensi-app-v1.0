@@ -468,6 +468,21 @@ a:hover {
   box-shadow: var(--shadow-md);
 }
 
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+#sidebar-toggle-btn {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  #sidebar-toggle-btn {
+    display: inline-flex;
+  }
+}
+
 .navbar-container {
   display: flex;
   align-items: center;

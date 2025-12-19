@@ -23,24 +23,27 @@ export function renderNavbar() {
   return `
     <nav class="navbar">
       <div class="container navbar-container">
-        <!-- Logo / Sidebar Toggle for Mobile -->
-        <div class="navbar-brand" id="sidebar-toggle-btn" style="cursor: pointer; display: flex; align-items: center; gap: 12px;">
-           <span style="font-size: 1.5rem; line-height: 1;">☰</span>
-           
-           <div class="flex items-center gap-2">
-             ${hasLogo
-      ? `<img src="${brand.logo}" alt="Logo" style="height: 32px; width: auto; object-fit: contain; border-radius: 4px;">`
-      : `<span style="font-size: 1.5rem;">📍</span>`
+        <div class="navbar-left">
+          <button class="btn btn-ghost btn-icon" id="sidebar-toggle-btn" style="margin-right: 0.5rem; font-size: 1.25rem;">
+            ☰
+          </button>
+          
+          <div class="navbar-brand">
+             <div class="flex items-center gap-2">
+               ${hasLogo
+      ? `<img src="${brand.logo}" alt="Logo" style="height: 28px; width: auto; object-fit: contain; border-radius: 4px;">`
+      : `<span style="font-size: 1.25rem;">📍</span>`
     }
-             
-             ${showText
-      ? `<div style="line-height: 1.2;">
-                    <div style="font-weight: 700; font-size: 1.1rem;">${brandName}</div>
-                    ${profile ? `<div style="font-size: 0.75rem; font-weight: normal; opacity: 0.8;">${profile.name?.split(' ')[0] || 'User'}</div>` : ''}
-                  </div>`
+               
+               ${showText
+      ? `<div style="line-height: 1.1;">
+                      <div style="font-weight: 700; font-size: 0.95rem;">${brandName}</div>
+                      ${profile ? `<div style="font-size: 0.65rem; font-weight: normal; opacity: 0.7;">${profile.name?.split(' ')[0] || 'User'}</div>` : ''}
+                    </div>`
       : ''
     }
-           </div>
+             </div>
+          </div>
         </div>
 
         <!-- Desktop Menu (Hidden on Mobile via CSS) -->
