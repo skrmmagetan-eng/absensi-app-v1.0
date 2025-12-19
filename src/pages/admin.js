@@ -111,7 +111,7 @@ export async function renderAdminDashboard() {
         </div>
 
         <!-- Recent Activities / Omset -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+        <div class="flex flex-col gap-lg">
            <!-- Latest Omset -->
            <div class="card">
              <div class="card-header flex justify-between items-center">
@@ -316,9 +316,9 @@ function renderLatestOrders(orders) {
   }
 
   container.innerHTML = orders.map(o => `
-    <div class="flex justify-between items-center p-md border-bottom hover-bg">
+    <div class="flex justify-between items-center p-md hover-bg" style="border-bottom: 1px solid var(--border-color);">
       <div>
-        <div class="font-bold text-sm">${o.customers?.name || 'Pelanggan'}</div>
+        <div class="font-bold text-sm" style="color: var(--text-primary);">${o.customers?.name || 'Pelanggan'}</div>
         <div class="text-xs text-muted">oleh ${o.users?.name || 'User'} • ${o.status}</div>
       </div>
       <div class="text-right">
@@ -337,9 +337,9 @@ function renderLatestVisits(visits) {
   }
 
   container.innerHTML = visits.map(v => `
-    <div class="flex justify-between items-center p-md border-bottom hover-bg">
+    <div class="flex justify-between items-center p-md hover-bg" style="border-bottom: 1px solid var(--border-color);">
       <div>
-        <div class="font-bold text-sm">${v.customers?.name || 'Pelanggan'}</div>
+        <div class="font-bold text-sm" style="color: var(--text-primary);">${v.customers?.name || 'Pelanggan'}</div>
         <div class="text-xs text-muted">oleh ${v.users?.name || 'User'}</div>
       </div>
       <div class="text-right">
