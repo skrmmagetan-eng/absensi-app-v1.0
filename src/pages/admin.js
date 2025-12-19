@@ -157,43 +157,32 @@ async function loadAdminData(customStart = null, customEnd = null) {
 
   showLoading('Memuat data Dashboard...');
   try {
-    // 1. Load Employees
-    const { data: employees } = await db.getAllEmployees();
-    document.getElementById('stat-employees').textContent = employees?.length || 0;
+    // 1. Load All Data in Parallel for maximum speed
+    const [employeesRes, kpiRes, ordersRes, attendanceRes, customersRes] = await Promise.all([
+      db.getAllEmployees(),
+      db.getKPIStats(start + ' 00:00:00', end + ' 23:59:59'),
+      db.getOrders(), // We need this for widgets too
+      db.getAllAttendance(), // We need this for widgets too
+      db.getCustomers() // Only needed if RPC fails, but fetching in parallel is usually faster than sequential fallback
+    ]);
 
-    // 2. Try Loading Real KPI Data via RPC
-    let kpiStats = [];
-    let rpcError = null;
+    const employees = employeesRes.data || [];
+    document.getElementById('stat-employees').textContent = employees.length;
 
-    try {
-      // Append time for full day coverage (UTC/Local considerations handled by DB usually, but manual string constraint is safe enough for dates)
-      const { data, error } = await db.getKPIStats(start + ' 00:00:00', end + ' 23:59:59');
-      if (error) throw error;
-      kpiStats = data || [];
-    } catch (e) {
-      rpcError = e;
-      console.warn('RPC getKPIStats failed, falling back to client-side calculation:', e.message);
-    }
+    let kpiStats = kpiRes.data || [];
+    const allOrders = ordersRes.data || [];
+    const allAttendance = attendanceRes.data || [];
+    const allCustomers = customersRes.data || [];
 
-    // 3. Fallback Calculation if RPC failed OR if data is empty (and we want to be sure)
-    // actually if RPC succeeds but returns empty, that's valid. Only if RPC FAILS (error).
-    if (rpcError) {
-      // FETCH RAW DATA for client-side aggregation
-      const [ordersRes, customersRes, attendanceRes] = await Promise.all([
-        db.getOrders(),
-        db.getCustomers(),
-        db.getAllAttendance()
-      ]);
+    // 2. If RPC failed or returned empty (and we have employees to report on), use client-side fallback
+    if (kpiRes.error || (kpiStats.length === 0 && employees.length > 0)) {
+      if (kpiRes.error) console.warn('RPC failed, using fallback:', kpiRes.error.message);
 
-      const allOrders = ordersRes.data || [];
-      const allCustomers = customersRes.data || [];
-      const allAttendance = attendanceRes.data || [];
-
-      // Filter for this month
       const startDt = new Date(start);
       const endDt = new Date(end);
       endDt.setHours(23, 59, 59, 999);
 
+      // Filter data for the selected period
       const periodOrders = allOrders.filter(o => {
         const d = new Date(o.created_at);
         return d >= startDt && d <= endDt;
@@ -209,109 +198,96 @@ async function loadAdminData(customStart = null, customEnd = null) {
         return d >= startDt && d <= endDt;
       });
 
-      // Map employees to KPI structure
-      if (employees) {
-        kpiStats = employees.map(emp => {
-          const empOrders = periodOrders.filter(o => o.employee_id === emp.id);
-          const empCust = periodCustomers.filter(c => c.employee_id === emp.id); // Assuming employee_id col exists based on createCustomer code
+      kpiStats = employees.map(emp => {
+        const empOrders = periodOrders.filter(o => o.employee_id === emp.id);
+        const orderCount = empOrders.length;
+        const totalSales = empOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+        const newCustCount = periodCustomers.filter(c => c.employee_id === emp.id).length;
+        const visitCount = periodAttendance.filter(a => a.employee_id === emp.id).length;
 
-          const orderCount = empOrders.length;
-          const totalSales = empOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
-          const newCustCount = empCust.length;
-
-          const visitCount = periodAttendance.filter(a => a.employee_id === emp.id).length;
-
-          // Calculate Score: (Visits * 2) + (New Cust * 10) + (Orders * 5)
-          let score = Math.min(100, (visitCount * 2) + (newCustCount * 10) + (orderCount * 5));
-
-          return {
-            user_id: emp.id,
-            user_name: emp.name,
-            visit_count: visitCount,
-            new_customer_count: newCustCount,
-            order_count: orderCount,
-            total_sales: totalSales,
-            score: score
-          };
-        });
-      }
+        return {
+          user_id: emp.id,
+          user_name: emp.name,
+          visit_count: visitCount,
+          new_customer_count: newCustCount,
+          order_count: orderCount,
+          total_sales: totalSales,
+          score: Math.min(100, (visitCount * 2) + (newCustCount * 10) + (orderCount * 5))
+        };
+      });
     }
 
-    // 4. Update UI with Stats (Source is either RPC or Fallback)
-    // SORT BY SCORE DESCENDING
+    // 3. Update Global Stats
     kpiStats.sort((a, b) => b.score - a.score);
-
     const totalRev = kpiStats.reduce((sum, k) => sum + (Number(k.total_sales) || 0), 0);
     const totalNewCust = kpiStats.reduce((sum, k) => sum + (Number(k.new_customer_count) || 0), 0);
 
     const elRevenue = document.getElementById('stat-revenue');
     if (elRevenue) elRevenue.textContent = formatCurrency(totalRev);
-
     document.getElementById('stat-customers').textContent = totalNewCust;
 
     renderKPITable(kpiStats);
 
-    // 5. Load Initial Data for Widgets
-    const { data: recentOrders } = await db.getOrders();
-    const { data: recentVisits } = await db.getAllAttendance();
+    // 4. Update Widgets with pre-loaded data
+    window._allRecentOrders = allOrders;
+    window._allRecentVisits = allAttendance;
 
-    // Store in window for global access/filtering
-    window._allRecentOrders = recentOrders || [];
-    window._allRecentVisits = recentVisits || [];
+    renderLatestOrders(allOrders.slice(0, 10));
+    renderLatestVisits(allAttendance.slice(0, 10));
 
-    renderLatestOrders(window._allRecentOrders.slice(0, 10));
-    renderLatestVisits(window._allRecentVisits.slice(0, 10));
-
-    // Helper to reload dashboard for specific month
-    window.reloadDashboardWithPeriod = (monthValue) => {
-      if (!monthValue) return;
-      const [year, month] = monthValue.split('-');
-      const firstDay = new Date(year, month - 1, 1).toISOString().split('T')[0];
-      const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
-      loadAdminData(firstDay, lastDay);
-    };
-
-    // Global filtering function
-    window.filterDashboardByEmployee = (employeeId, employeeName) => {
-      const orderLabel = document.getElementById('orders-filter-label');
-      const visitLabel = document.getElementById('visits-filter-label');
-      const tbody = document.getElementById('kpi-table-body');
-      const rows = tbody.querySelectorAll('tr');
-
-      if (employeeId === 'all') {
-        tbody.classList.remove('table-has-selection');
-        rows.forEach(r => r.classList.remove('selected'));
-        orderLabel.style.display = 'none';
-        visitLabel.style.display = 'none';
-        renderLatestOrders(window._allRecentOrders.slice(0, 10));
-        renderLatestVisits(window._allRecentVisits.slice(0, 10));
-      } else {
-        tbody.classList.add('table-has-selection');
-        rows.forEach(r => {
-          if (r.dataset.userId === employeeId) r.classList.add('selected');
-          else r.classList.remove('selected');
-        });
-
-        orderLabel.style.display = 'inline-block';
-        orderLabel.textContent = employeeName;
-        visitLabel.style.display = 'inline-block';
-        visitLabel.textContent = employeeName;
-
-        const filteredOrders = window._allRecentOrders.filter(o => o.employee_id === employeeId);
-        const filteredVisits = window._allRecentVisits.filter(v => v.employee_id === employeeId);
-
-        renderLatestOrders(filteredOrders.slice(0, 10));
-        renderLatestVisits(filteredVisits.slice(0, 10));
-      }
-
-      // Scroll to gadgets for better UX
-      document.getElementById('latest-orders-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
+    // Define helper functions in window
+    setupGlobalFilters();
 
   } catch (error) {
     console.error('Admin Load Error:', error);
     document.getElementById('kpi-table-body').innerHTML = `<tr><td colspan="5" class="text-danger text-center">Gagal memuat Dashboard: ${error.message}</td></tr>`;
+  } finally {
+    hideLoading();
   }
+}
+
+function setupGlobalFilters() {
+  window.reloadDashboardWithPeriod = (monthValue) => {
+    if (!monthValue) return;
+    const [year, month] = monthValue.split('-');
+    const firstDay = new Date(year, month - 1, 1).toISOString().split('T')[0];
+    const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
+    loadAdminData(firstDay, lastDay);
+  };
+
+  window.filterDashboardByEmployee = (employeeId, employeeName) => {
+    const orderLabel = document.getElementById('orders-filter-label');
+    const visitLabel = document.getElementById('visits-filter-label');
+    const tbody = document.getElementById('kpi-table-body');
+    const rows = tbody.querySelectorAll('tr');
+
+    if (employeeId === 'all') {
+      tbody.classList.remove('table-has-selection');
+      rows.forEach(r => r.classList.remove('selected'));
+      orderLabel.style.display = 'none';
+      visitLabel.style.display = 'none';
+      renderLatestOrders(window._allRecentOrders.slice(0, 10));
+      renderLatestVisits(window._allRecentVisits.slice(0, 10));
+    } else {
+      tbody.classList.add('table-has-selection');
+      rows.forEach(r => {
+        if (r.dataset.userId === employeeId) r.classList.add('selected');
+        else r.classList.remove('selected');
+      });
+
+      orderLabel.style.display = 'inline-block';
+      orderLabel.textContent = employeeName;
+      visitLabel.style.display = 'inline-block';
+      visitLabel.textContent = employeeName;
+
+      const filteredOrders = window._allRecentOrders.filter(o => o.employee_id === employeeId);
+      const filteredVisits = window._allRecentVisits.filter(v => v.employee_id === employeeId);
+
+      renderLatestOrders(filteredOrders.slice(0, 10));
+      renderLatestVisits(filteredVisits.slice(0, 10));
+    }
+    document.getElementById('latest-orders-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 }
 
 function renderKPITable(data) {
