@@ -13,9 +13,22 @@ export async function renderAdminDashboard() {
     
     <div class="page">
       <div class="container">
-        <div class="mb-lg">
-          <h1>${isManager ? 'Manager Dashboard' : 'Admin Dashboard'} 📊</h1>
-          <p style="color: var(--text-muted);">Overview performa perusahaan & karyawan</p>
+        <div class="mb-lg flex justify-between items-center wrap-mobile">
+          <div>
+            <h1>${isManager ? 'Manager Dashboard' : 'Admin Dashboard'} 📊</h1>
+            <p style="color: var(--text-muted);">Overview performa perusahaan & karyawan</p>
+          </div>
+          <div class="flex gap-sm items-center mt-sm-mobile">
+             <label class="text-xs text-muted font-bold uppercase" style="letter-spacing: 1px;">Periode:</label>
+             <input 
+                type="month" 
+                id="dashboard-period" 
+                class="form-input py-1" 
+                value="${new Date().toISOString().substring(0, 7)}" 
+                onchange="window.reloadDashboardWithPeriod(this.value)"
+                style="max-width: 160px; border-radius: 8px; font-weight: 600;"
+             >
+          </div>
         </div>
 
         <!-- Global Stats -->
@@ -137,14 +150,18 @@ export async function renderAdminDashboard() {
   await loadAdminData();
 }
 
-async function loadAdminData() {
+async function loadAdminData(customStart = null, customEnd = null) {
+  const { start: defaultStart, end: defaultEnd } = getMonthDateRange();
+  const start = customStart || defaultStart;
+  const end = customEnd || defaultEnd;
+
+  showLoading('Memuat data Dashboard...');
   try {
     // 1. Load Employees
     const { data: employees } = await db.getAllEmployees();
     document.getElementById('stat-employees').textContent = employees?.length || 0;
 
     // 2. Try Loading Real KPI Data via RPC
-    const { start, end } = getMonthDateRange();
     let kpiStats = [];
     let rpcError = null;
 
@@ -245,17 +262,36 @@ async function loadAdminData() {
     renderLatestOrders(window._allRecentOrders.slice(0, 10));
     renderLatestVisits(window._allRecentVisits.slice(0, 10));
 
+    // Helper to reload dashboard for specific month
+    window.reloadDashboardWithPeriod = (monthValue) => {
+      if (!monthValue) return;
+      const [year, month] = monthValue.split('-');
+      const firstDay = new Date(year, month - 1, 1).toISOString().split('T')[0];
+      const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
+      loadAdminData(firstDay, lastDay);
+    };
+
     // Global filtering function
     window.filterDashboardByEmployee = (employeeId, employeeName) => {
       const orderLabel = document.getElementById('orders-filter-label');
       const visitLabel = document.getElementById('visits-filter-label');
+      const tbody = document.getElementById('kpi-table-body');
+      const rows = tbody.querySelectorAll('tr');
 
       if (employeeId === 'all') {
+        tbody.classList.remove('table-has-selection');
+        rows.forEach(r => r.classList.remove('selected'));
         orderLabel.style.display = 'none';
         visitLabel.style.display = 'none';
         renderLatestOrders(window._allRecentOrders.slice(0, 10));
         renderLatestVisits(window._allRecentVisits.slice(0, 10));
       } else {
+        tbody.classList.add('table-has-selection');
+        rows.forEach(r => {
+          if (r.dataset.userId === employeeId) r.classList.add('selected');
+          else r.classList.remove('selected');
+        });
+
         orderLabel.style.display = 'inline-block';
         orderLabel.textContent = employeeName;
         visitLabel.style.display = 'inline-block';
@@ -286,7 +322,7 @@ function renderKPITable(data) {
   }
 
   tbody.innerHTML = data.map(row => `
-    <tr onclick="window.filterDashboardByEmployee('${row.user_id}', '${row.user_name}')" style="cursor: pointer;" title="Klik untuk filter histori & omset">
+    <tr data-user-id="${row.user_id}" onclick="window.filterDashboardByEmployee('${row.user_id}', '${row.user_name}')" style="cursor: pointer;" title="Klik untuk filter histori & omset">
       <td>
         <strong>${row.user_name}</strong><br>
         <small class="text-muted">Total: ${formatCurrency(row.total_sales)}</small>

@@ -846,6 +846,28 @@ a:hover {
   white-space: nowrap;
 }
 
+/* 📊 TABLE INTERACTIVITY & FOCUS */
+.table-has-selection tr:not(.selected) {
+  opacity: 0.4;
+  filter: blur(1px);
+  transition: all 0.4s ease;
+}
+
+.table-has-selection tr.selected {
+  background: rgba(124, 143, 240, 0.1) !important;
+  border-left: 4px solid var(--primary-light);
+  transform: scale(1.02);
+  z-index: 10;
+  box-shadow: var(--shadow-md);
+  opacity: 1;
+  filter: none;
+}
+
+.table-has-selection tr.selected td {
+  color: var(--primary-light);
+  font-weight: 600;
+}
+
 /* DATA PROTECTION MASKING */
 .protected-data {
   filter: blur(4px);
