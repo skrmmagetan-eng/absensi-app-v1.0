@@ -1,10 +1,11 @@
 import { auth, db } from '../lib/supabase.js';
 import { state } from '../lib/router.js';
 import { router } from '../lib/router.js';
-import { showNotification, showLoading, hideLoading, validate, branding } from '../utils/helpers.js';
+import { showNotification, showLoading, hideLoading, validate, branding, storage } from '../utils/helpers.js';
 
 export function renderLoginPage() {
   const app = document.getElementById('app');
+  const saved = storage.getCredentials();
 
   // Render structure immediately (Optimistic Render)
   app.innerHTML = `
@@ -27,14 +28,19 @@ export function renderLoginPage() {
           <form id="login-form">
             <div class="form-group">
               <label class="form-label" for="email">Email</label>
-              <input type="email" id="email" class="form-input" placeholder="nama@perusahaan.com" required />
+              <input type="email" id="email" class="form-input" placeholder="nama@perusahaan.com" value="${saved?.email || ''}" required />
               <span class="form-error" id="email-error"></span>
             </div>
 
             <div class="form-group">
               <label class="form-label" for="password">Password</label>
-              <input type="password" id="password" class="form-input" placeholder="Masukkan password" required />
+              <input type="password" id="password" class="form-input" placeholder="Masukkan password" value="${saved?.password || ''}" required />
               <span class="form-error" id="password-error"></span>
+            </div>
+
+            <div class="form-group flex items-center gap-2 mb-lg">
+               <input type="checkbox" id="remember-me" ${saved ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer;">
+               <label for="remember-me" class="text-sm cursor-pointer" style="color: var(--text-secondary);">Simpan Password di HP ini</label>
             </div>
 
             <button type="submit" class="btn btn-primary w-full" id="login-btn">
@@ -160,6 +166,14 @@ async function handleLogin(e) {
       profile: profile || null,
       isAuthenticated: true,
     });
+
+    // 4. Remember Me Logic (Local Storage)
+    const rememberMe = document.getElementById('remember-me').checked;
+    if (rememberMe) {
+      storage.saveCredentials(email, password);
+    } else {
+      storage.remove('auth_cache');
+    }
 
     showNotification('Login berhasil!', 'success');
 

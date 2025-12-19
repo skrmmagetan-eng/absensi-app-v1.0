@@ -196,6 +196,22 @@ export const storage = {
         }
     },
 
+    // Credentials local storage (Remember Me)
+    saveCredentials(email, password) {
+        try {
+            const data = btoa(JSON.stringify({ email, password }));
+            localStorage.setItem('auth_cache', data);
+        } catch (e) { console.error('Storage error', e); }
+    },
+
+    getCredentials() {
+        try {
+            const data = localStorage.getItem('auth_cache');
+            if (!data) return null;
+            return JSON.parse(atob(data));
+        } catch (e) { return null; }
+    },
+
     clear() {
         try {
             localStorage.clear();

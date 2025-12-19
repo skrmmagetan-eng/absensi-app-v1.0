@@ -81,10 +81,27 @@ async function loadEmployees() {
         <td>${emp.email}</td>
         <td><span class="badge badge-success">Aktif</span></td>
         <td>
-          <button class="btn btn-outline btn-small" onclick="window.editEmployee('${emp.id}')">✏️</button>
+          <div class="flex gap-xs">
+            <button class="btn btn-outline btn-small" onclick="window.editEmployee('${emp.id}')" title="Edit Profil">✏️</button>
+            <button class="btn btn-outline btn-small" onclick="window.resetEmployeePassword('${emp.email}')" title="Reset Password">🔑</button>
+          </div>
         </td>
       </tr>
     `).join('');
+
+    // Global reset handler
+    window.resetEmployeePassword = async (email) => {
+      const proceed = confirm(`Apakah Anda ingin mengirim email instruksi Reset Password ke ${email}?\n\nCatatan: Anda juga bisa mereset password secara manual melalui Dashboard Supabase > Authentication > Users.`);
+      if (proceed) {
+        showLoading('Mengirim permintaan reset...');
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + '#login',
+        });
+        hideLoading();
+        if (error) showNotification('Gagal: ' + error.message, 'danger');
+        else showNotification('Email reset terkirim ke ' + email, 'success');
+      }
+    };
 
   } catch (error) {
     console.error('Load employees error:', error);

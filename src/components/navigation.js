@@ -83,6 +83,9 @@ export function renderNavbar() {
          </div>
 
          <div style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+            <button class="btn btn-outline w-full justify-start" id="sidebar-local-pwd-btn">
+               🔄 Update Password HP
+            </button>
             <button class="btn btn-outline w-full justify-start" id="sidebar-theme-btn">
                ${currentThemeIcon} Ganti Tema
             </button>
@@ -256,4 +259,23 @@ export function setupNavigationEvents() {
       });
     });
   });
+
+  // Local Password Cache Update (No Supabase involvement)
+  const localPwdBtn = document.getElementById('sidebar-local-pwd-btn');
+  if (localPwdBtn) {
+    localPwdBtn.addEventListener('click', () => {
+      const currentBrand = branding.getLocal().name || 'Sistem';
+      const profile = state.getState('profile');
+      if (!profile?.email) return showNotification('Silakan login ulang', 'warning');
+
+      const newPwd = prompt(`🔄 UPDATE PASSWORD TERSIMPAN\n\nEmail: ${profile.email}\n\nHanya gunakan fitur ini jika Admin sudah mereset password Anda. Masukkan password baru yang akan disimpan di HP ini untuk login berikutnya:`);
+
+      if (newPwd && newPwd.length >= 6) {
+        storage.saveCredentials(profile.email, newPwd);
+        showNotification('✅ Password tersimpan di HP ini diperbarui!', 'success');
+      } else if (newPwd) {
+        showNotification('Password minimal 6 karakter', 'warning');
+      }
+    });
+  }
 }
