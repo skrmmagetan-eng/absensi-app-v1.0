@@ -53,6 +53,31 @@ export async function renderAdminDashboard() {
           </div>
         </div>
 
+        <!-- Quick Actions for Admin -->
+        <div class="card mb-lg">
+          <div class="card-header">
+            <h3 class="card-title">⚡ Aksi Cepat</h3>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+            <button class="btn btn-primary" onclick="window.location.hash='#admin/karyawan'">
+              <span>👥</span>
+              <span>Kelola Karyawan</span>
+            </button>
+            <button class="btn btn-success" onclick="window.location.hash='#admin/orders'">
+              <span>📦</span>
+              <span>Lihat Semua Order</span>
+            </button>
+            <button class="btn btn-outline" onclick="window.location.hash='#admin/katalog'">
+              <span>🛍️</span>
+              <span>Kelola Katalog</span>
+            </button>
+            <button class="btn btn-outline" onclick="window.location.hash='#admin/settings'">
+              <span>⚙️</span>
+              <span>Pengaturan</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Employee KPI Table -->
         <div class="card mb-lg">
           <div class="card-header flex justify-between items-center">

@@ -51,7 +51,7 @@ export async function renderCustomersPage() {
 
   // Event listeners
   document.getElementById('add-customer-btn').addEventListener('click', () => {
-    router.navigate('/pelanggan/tambah');
+    window.location.hash = '#pelanggan/tambah';
   });
 
   document.getElementById('search-input').addEventListener('input', (e) => {
@@ -387,7 +387,7 @@ async function handleAddCustomer(e) {
 
     // Navigate back to customers page
     setTimeout(() => {
-      router.navigate('/pelanggan');
+      window.location.hash = '#pelanggan';
     }, 1500);
   } catch (error) {
     hideLoading();
