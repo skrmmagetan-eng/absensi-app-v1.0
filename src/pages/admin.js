@@ -42,7 +42,7 @@ export async function renderAdminDashboard() {
           </div>
           ` : ''}
 
-          <div class="stat-card warning">
+          <div class="stat-card warning" onclick="window.location.hash='#admin/pelanggan'" style="cursor: pointer;">
             <div class="stat-header">
               <div class="stat-icon">⚠️</div>
               <div class="stat-details">

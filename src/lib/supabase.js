@@ -88,7 +88,7 @@ export const db = {
     async getCustomers(userId = null) {
         let query = supabase
             .from('customers')
-            .select('*')
+            .select('*, users(name)')
             .order('created_at', { ascending: false });
 
         if (userId) {
