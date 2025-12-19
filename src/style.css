@@ -802,6 +802,61 @@ a:hover {
   color: white;
 }
 
+.badge-danger {
+  background: var(--danger-gradient);
+  color: white;
+}
+
+.badge-outline {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+/* 🛡️ SECURITY INDICATORS */
+.admin-mode .navbar {
+  border-bottom: 2px solid #7c8ff0;
+  box-shadow: 0 4px 20px rgba(124, 143, 240, 0.2);
+}
+
+.admin-mode .navbar-brand::after {
+  content: 'SECURE';
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  background: var(--primary-gradient);
+  color: white;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+  letter-spacing: 1px;
+}
+
+.admin-mode .page::before {
+  content: 'ADMINISTRATOR SECURE AREA';
+  position: fixed;
+  top: 100px;
+  right: -50px;
+  transform: rotate(45deg);
+  background: rgba(124, 143, 240, 0.05);
+  color: rgba(124, 143, 240, 0.1);
+  font-weight: 900;
+  font-size: 3rem;
+  pointer-events: none;
+  z-index: -1;
+  white-space: nowrap;
+}
+
+/* DATA PROTECTION MASKING */
+.protected-data {
+  filter: blur(4px);
+  transition: filter 0.3s ease;
+  cursor: help;
+}
+
+.protected-data:hover {
+  filter: blur(0);
+}
+
 .badge-warning {
   background: var(--warning-gradient);
   color: white;

@@ -68,6 +68,13 @@ export async function renderCheckInPage() {
               ></textarea>
             </div>
 
+            <!-- Selfie Input -->
+            <div class="form-group">
+              <label class="form-label">Selfie Check-In *</label>
+              <input type="file" id="checkin-photo" class="form-input" accept="image/*" capture="user" required>
+              <small class="text-muted">Foto selfie langsung di lokasi untuk validasi absen.</small>
+            </div>
+
             <!-- Submit Button -->
             <button type="submit" class="btn btn-primary w-full" id="submit-btn" disabled>
               <span>✅</span>
@@ -289,6 +296,8 @@ async function handleCheckIn(e) {
 
   const customerId = document.getElementById('customer').value;
   const notes = document.getElementById('notes').value.trim();
+  const photoInput = document.getElementById('checkin-photo');
+  const photoFile = photoInput.files[0];
   const locationInfo = document.getElementById('location-info');
   const user = state.getState('user');
 
@@ -297,9 +306,19 @@ async function handleCheckIn(e) {
     return;
   }
 
+  if (!photoFile) {
+    showNotification('Mohon ambil foto selfie untuk absen', 'warning');
+    return;
+  }
+
   showLoading('Memproses check in...');
 
   try {
+    // 1. Upload Photo
+    const { data: photoUrl, error: uploadError } = await db.uploadVisitEvidence(photoFile);
+    if (uploadError) throw new Error('Gagal upload foto: ' + uploadError.message);
+
+    // 2. Prepare Data
     const attendanceData = {
       employee_id: user.id,
       customer_id: customerId,
@@ -307,6 +326,7 @@ async function handleCheckIn(e) {
       check_in_latitude: parseFloat(locationInfo.dataset.lat),
       check_in_longitude: parseFloat(locationInfo.dataset.lng),
       notes: notes || null,
+      photo_url: photoUrl, // Adding photo_url field
     };
 
     const { data, error } = await db.checkIn(attendanceData);

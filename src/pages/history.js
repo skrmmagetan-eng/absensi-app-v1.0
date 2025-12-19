@@ -1,6 +1,6 @@
 import { db } from '../lib/supabase.js';
 import { state } from '../lib/router.js';
-import { formatTime, formatDate, getTimeAgo, showLoading, hideLoading } from '../utils/helpers.js';
+import { formatTime, formatDate, getTimeAgo, showLoading, hideLoading, formatOrderItems } from '../utils/helpers.js';
 import { renderNavbar, renderBottomNav } from '../components/navigation.js';
 
 let currentTab = 'visits'; // 'visits' or 'orders'
@@ -159,8 +159,8 @@ function renderOrdersList(orders, container) {
                         </span>
                     </div>
 
-                    <div class="text-sm mb-sm">
-                        ${o.items_summary || 'Detail item tidak tersedia'}
+                    <div class="text-sm mb-sm" style="white-space: pre-wrap;">
+                        ${o.items_summary || formatOrderItems(o.items)}
                     </div>
 
                     <div class="flex justify-between items-center border-top pt-sm mt-sm">

@@ -241,36 +241,36 @@ function createNotificationContainer() {
 }
 
 export const showLoading = (message = 'Loading...') => {
-  const existing = document.getElementById('loading-overlay');
-  if (existing) {
-    // Update message if already showing
-    const textEl = existing.querySelector('.loading-text');
-    if (textEl) textEl.textContent = message;
-    return;
-  }
+    const existing = document.getElementById('loading-overlay');
+    if (existing) {
+        // Update message if already showing
+        const textEl = existing.querySelector('.loading-text');
+        if (textEl) textEl.textContent = message;
+        return;
+    }
 
-  const overlay = document.createElement('div');
-  overlay.id = 'loading-overlay';
-  overlay.className = 'loading-overlay';
-  overlay.innerHTML = `
+    const overlay = document.createElement('div');
+    overlay.id = 'loading-overlay';
+    overlay.className = 'loading-overlay';
+    overlay.innerHTML = `
     <div class="spinner-container">
       <div class="spinner"></div>
     </div>
     <div class="loading-text">${message}</div>
   `;
-  document.body.appendChild(overlay);
+    document.body.appendChild(overlay);
 };
 
 export const hideLoading = () => {
-  const overlay = document.getElementById('loading-overlay');
-  if (overlay) {
-    // Mengurangi durasi animasi untuk membuat transisi lebih cepat
-    overlay.style.opacity = '0';
-    overlay.style.transition = 'opacity 0.1s ease-out'; // Dari 0.2s menjadi 0.1s
-    setTimeout(() => {
-      if (overlay.parentElement) overlay.remove();
-    }, 100); // Dari 200ms menjadi 100ms
-  }
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+        // Mengurangi durasi animasi untuk membuat transisi lebih cepat
+        overlay.style.opacity = '0';
+        overlay.style.transition = 'opacity 0.1s ease-out'; // Dari 0.2s menjadi 0.1s
+        setTimeout(() => {
+            if (overlay.parentElement) overlay.remove();
+        }, 100); // Dari 200ms menjadi 100ms
+    }
 };
 
 
@@ -418,4 +418,12 @@ export const branding = {
             name: localStorage.getItem('cached_biz_name')
         };
     }
+};
+
+// Order items formatting
+export const formatOrderItems = (items) => {
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        return 'Detail pesanan tidak tersedia';
+    }
+    return items.map(item => `📦 ${item.name} (${item.qty}x)`).join('\n');
 };

@@ -1,6 +1,6 @@
 import { db } from '../lib/supabase.js';
 import { state } from '../lib/router.js';
-import { formatTime, formatDate, formatCurrency, showLoading, hideLoading, getTodayDateString } from '../utils/helpers.js';
+import { formatTime, formatDate, formatCurrency, showLoading, hideLoading, getTodayDateString, formatOrderItems } from '../utils/helpers.js';
 import { renderNavbar } from '../components/navigation.js';
 
 let employees = [];
@@ -246,9 +246,9 @@ function renderOrdersList(orders, container) {
 
                     <!-- Hidden Detail -->
                     <div class="expand-content mt-md border-top pt-md">
-                        <div class="text-sm mb-sm p-sm bg-tertiary rounded">
+                        <div class="text-sm mb-sm p-sm bg-tertiary rounded" style="white-space: pre-wrap;">
                             <div class="text-muted text-xs mb-1">DETAIL BARANG:</div>
-                            ${o.items_summary || 'Detail item tidak tersedia'}
+                            ${o.items_summary || formatOrderItems(o.items)}
                             ${o.notes ? `<div class="mt-2 pt-2 border-top"><strong>Catatan:</strong><br>${o.notes}</div>` : ''}
                         </div>
                         <div class="flex justify-between items-center text-xs text-muted">

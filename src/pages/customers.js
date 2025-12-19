@@ -450,7 +450,7 @@ async function handleLogVisit(customer) {
     // 1. Get Location
     const pos = await geo.getCurrentPosition();
 
-    // 2. Calculate Distance (Optional validation: must be < 500m from customer)
+    // 2. Calculate Distance
     const dist = geo.calculateDistance(
       pos.latitude, pos.longitude,
       customer.latitude, customer.longitude
@@ -458,30 +458,90 @@ async function handleLogVisit(customer) {
 
     hideLoading();
 
-    // 3. Confirm Visit
-    const note = prompt(`Anda berjarak ${Math.round(dist)}m dari lokasi.\nTambahkan catatan kunjungan:`);
+    // 3. Create Custom Modal for Visit
+    const modalId = 'visit-modal-' + Date.now();
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = modalId;
+    overlay.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">📍 Absen Kunjungan</h3>
+          <button class="modal-close" onclick="document.getElementById('${modalId}').remove()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="text-sm text-muted mb-md">
+            Anda berjarak <strong>${Math.round(dist * 1000)}m</strong> dari <strong>${customer.name}</strong>.
+          </p>
+          <form id="visit-form">
+            <div class="form-group">
+              <label class="form-label">Catatan Kunjungan</label>
+              <textarea id="visit-modal-notes" class="form-textarea" rows="2" placeholder="Apa hasil kunjungannya?" required></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Foto Selfie Absen *</label>
+              <input type="file" id="visit-modal-photo" class="form-input" accept="image/*" capture="user" required>
+              <small class="text-muted">Gunakan kamera untuk memvalidasi kehadiran Anda.</small>
+            </div>
+            <div class="modal-footer" style="padding: 0; margin-top: 1.5rem; border: none;">
+              <button type="button" class="btn btn-outline" onclick="document.getElementById('${modalId}').remove()">Batal</button>
+              <button type="submit" class="btn btn-primary" id="btn-submit-visit">✅ Kirim Absen</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
 
-    if (note !== null) {
-      showLoading('Menyimpan kunjungan...');
-      const user = state.getState('user');
+    document.body.appendChild(overlay);
 
-      const { error } = await db.logVisit({
-        customer_id: customer.id,
-        user_id: user.id,
-        latitude: pos.latitude,
-        longitude: pos.longitude,
-        notes: note
-      });
+    const form = overlay.querySelector('#visit-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-      if (error) throw error;
+      const notes = document.getElementById('visit-modal-notes').value;
+      const photoFile = document.getElementById('visit-modal-photo').files[0];
+      const btn = document.getElementById('btn-submit-visit');
 
-      hideLoading();
-      showNotification('Kunjungan berhasil dicatat! (+Poin KPI)', 'success');
-    }
+      if (!photoFile) {
+        showNotification('Mohon ambil foto selfie', 'warning');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Mengirim...';
+      showLoading('Mengunggah data kunjungan...');
+
+      try {
+        // Upload photo
+        const { data: photoUrl, error: uploadError } = await db.uploadVisitEvidence(photoFile);
+        if (uploadError) throw uploadError;
+
+        const user = state.getState('user');
+        const { error } = await db.logVisit({
+          customer_id: customer.id,
+          user_id: user.id,
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+          notes: notes,
+          photo_url: photoUrl
+        });
+
+        if (error) throw error;
+
+        hideLoading();
+        overlay.remove();
+        showNotification('Kunjungan berhasil dicatat! ✅', 'success');
+      } catch (err) {
+        hideLoading();
+        btn.disabled = false;
+        btn.innerHTML = '✅ Kirim Absen';
+        showNotification(err.message || 'Gagal mencatat kunjungan', 'danger');
+      }
+    });
 
   } catch (e) {
     hideLoading();
-    showNotification(e.message || 'Gagal mencatat kunjungan', 'danger');
+    showNotification(e.message || 'Gagal mendeteksi lokasi', 'danger');
   }
 }
 

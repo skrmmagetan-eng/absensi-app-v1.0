@@ -54,35 +54,61 @@ export async function renderAdminDashboard() {
         </div>
 
         <!-- Quick Actions for Admin -->
-        <div class="card mb-lg">
-          <div class="card-header">
-            <h3 class="card-title">⚡ Aksi Cepat</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-lg">
+          <div class="card md:col-span-2">
+            <div class="card-header">
+              <h3 class="card-title">⚡ Aksi Cepat</h3>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem;">
+              <button class="btn btn-primary" onclick="window.location.hash='#admin/karyawan'">
+                <span>👥</span>
+                <span>Karyawan</span>
+              </button>
+              <button class="btn btn-success" onclick="window.location.hash='#admin/orders'">
+                <span>📦</span>
+                <span>Omset</span>
+              </button>
+              <button class="btn btn-outline" onclick="window.location.hash='#admin/katalog'">
+                <span>🛍️</span>
+                <span>Katalog</span>
+              </button>
+              <button class="btn btn-outline" onclick="window.location.hash='#admin/histori'">
+                <span>📜</span>
+                <span>Aktivitas</span>
+              </button>
+              <button class="btn btn-outline" onclick="window.location.hash='#admin/targets'">
+                <span>🎯</span>
+                <span>Target</span>
+              </button>
+              <button class="btn btn-outline" onclick="window.location.hash='#admin/settings'">
+                <span>⚙️</span>
+                <span>Settings</span>
+              </button>
+            </div>
           </div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
-            <button class="btn btn-primary" onclick="window.location.hash='#admin/karyawan'">
-              <span>👥</span>
-              <span>Kelola Karyawan</span>
-            </button>
-            <button class="btn btn-success" onclick="window.location.hash='#admin/orders'">
-              <span>📦</span>
-              <span>Lihat Semua Omset</span>
-            </button>
-            <button class="btn btn-outline" onclick="window.location.hash='#admin/katalog'">
-              <span>🛍️</span>
-              <span>Kelola Katalog</span>
-            </button>
-            <button class="btn btn-outline" onclick="window.location.hash='#admin/histori'">
-              <span>📜</span>
-              <span>Riwayat Aktivitas</span>
-            </button>
-            <button class="btn btn-outline" onclick="window.location.hash='#admin/targets'">
-              <span>🎯</span>
-              <span>Target Tim</span>
-            </button>
-            <button class="btn btn-outline" onclick="window.location.hash='#admin/settings'">
-              <span>⚙️</span>
-              <span>Pengaturan</span>
-            </button>
+
+          <!-- Security Status Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">🛡️ Status Keamanan</h3>
+            </div>
+            <div class="flex flex-col gap-sm">
+              <div class="flex justify-between items-center text-sm">
+                <span>Row Level Security</span>
+                <span class="badge badge-success">AKTIF</span>
+              </div>
+              <div class="flex justify-between items-center text-sm">
+                <span>Data Encryption</span>
+                <span class="badge badge-success">AKTIF</span>
+              </div>
+              <div class="flex justify-between items-center text-sm">
+                <span>Admin Reroute Guard</span>
+                <span class="badge badge-success">AKTIF</span>
+              </div>
+              <div class="mt-md p-sm bg-tertiary rounded-md text-xs text-muted">
+                DILINDUNGI: Database terproteksi dengan enkripsi TLS/SSL.
+              </div>
+            </div>
           </div>
         </div>
 

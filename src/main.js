@@ -58,8 +58,8 @@ async function handleRouting() {
   // Remove query params if any for basic matching
   const path = hash.split('?')[0];
 
-  const user = state.getState('user');
-  const profile = state.getState('profile');
+  let user = state.getState('user');
+  let profile = state.getState('profile');
 
   // Guard: Redirect to login if not authenticated
   if (!user && path !== 'login') {
@@ -67,14 +67,36 @@ async function handleRouting() {
     return;
   }
 
+  // Double Check Security for Admin Routes (Real-time Validation)
+  if (path.startsWith('admin')) {
+    try {
+      // Re-fetch profile to ensure role hasn't changed or account hasn't been blocked
+      const { data: freshProfile, error } = await db.getUserProfile(user.id);
+      if (error || !['admin', 'manager'].includes(freshProfile?.role)) {
+        console.error('Security Breach or Role Change detected.');
+        state.updateState({ profile: freshProfile || null });
+        window.location.hash = '#dashboard'; // Kick back to dashboard
+        return;
+      }
+      // Update local state with fresh data
+      if (freshProfile.role !== profile?.role) {
+        state.updateState({ profile: freshProfile });
+      }
+      profile = freshProfile;
+    } catch (err) {
+      window.location.hash = '#login';
+      return;
+    }
+  }
+
   // Guard: Redirect logged in user away from login
   if (user && path === 'login') {
-    if (profile?.role === 'admin') window.location.hash = '#admin';
+    if (profile?.role === 'admin' || profile?.role === 'manager') window.location.hash = '#admin';
     else window.location.hash = '#dashboard';
     return;
   }
 
-  // Helper guard for admin pages
+  // Basic guard for other pages based on state
   if (path.startsWith('admin') && !['admin', 'manager'].includes(profile?.role)) {
     window.location.hash = '#dashboard';
     return;
@@ -83,6 +105,13 @@ async function handleRouting() {
   // Find handler
   const handler = routes[path];
   if (handler) {
+    // Inject "Secure Area" indicator for admin
+    if (path.startsWith('admin')) {
+      document.body.classList.add('admin-mode');
+    } else {
+      document.body.classList.remove('admin-mode');
+    }
+
     await handler();
     setupNavigationEvents(); // Re-attach global events
   } else {

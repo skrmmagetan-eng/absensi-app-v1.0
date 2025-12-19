@@ -229,8 +229,8 @@ async function openCheckOutModal(visitId, customerName) {
 
             <div class="form-group">
                 <label class="form-label">Bukti Foto (Selfie/Lokasi)</label>
-                <input type="file" id="visit-photo" class="form-input" accept="image/*;capture=camera" required>
-                <small class="text-muted">Wajib melampirkan foto bukti kunjungan.</small>
+                <input type="file" id="visit-photo" class="form-input" accept="image/*" capture="user" required>
+                <small class="text-muted">Wajib melampirkan foto bukti kunjungan langsung dari kamera.</small>
             </div>
 
             <div class="flex gap-2 justify-end mt-lg">

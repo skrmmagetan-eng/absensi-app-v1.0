@@ -1,6 +1,6 @@
 import { db } from '../lib/supabase.js';
 import { renderNavbar } from '../components/navigation.js';
-import { formatCurrency, formatDate, showLoading, hideLoading, showNotification, createModal } from '../utils/helpers.js';
+import { formatCurrency, formatDate, showLoading, hideLoading, showNotification, createModal, formatOrderItems } from '../utils/helpers.js';
 
 let currentFilter = 'all';
 let allOrders = []; // Store orders locally for access
@@ -133,8 +133,8 @@ function renderOrderCard(order) {
         </div>
         
         <div class="card-body" style="padding-top: 0;">
-            <div class="p-sm bg-tertiary rounded mb-md text-sm">
-                ${order.items_summary || 'Detail pesanan tidak tersedia'}
+            <div class="p-sm bg-tertiary rounded mb-md text-sm" style="white-space: pre-wrap;">
+                ${order.items_summary || formatOrderItems(order.items)}
                 ${order.notes ? `<br><div class="mt-2 pt-2 border-top border-gray-200"><strong>Catatan:</strong><br>${order.notes.replace(/\n/g, '<br>')}</div>` : ''}
             </div>
             

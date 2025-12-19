@@ -1,7 +1,7 @@
 import { db } from '../lib/supabase.js';
 import { state } from '../lib/router.js';
 import { router } from '../lib/router.js';
-import { showNotification, showLoading, hideLoading, formatCurrency, formatDate } from '../utils/helpers.js';
+import { showNotification, showLoading, hideLoading, formatCurrency, formatDate, formatOrderItems } from '../utils/helpers.js';
 import { renderNavbar, renderBottomNav } from '../components/navigation.js';
 
 export async function renderOrderPage() {
@@ -172,7 +172,7 @@ function renderOrdersList(orders, container) {
       </div>
       
       <div class="mb-sm p-3" style="background: var(--bg-tertiary); border-radius: var(--radius-sm);">
-        <pre style="font-family: inherit; margin: 0; white-space: pre-wrap; color: var(--text-secondary); line-height: 1.5;">${formatOrderContent(order.items)}</pre>
+        <pre style="font-family: inherit; margin: 0; white-space: pre-wrap; color: var(--text-secondary); line-height: 1.5;">${formatOrderItems(order.items)}</pre>
         ${order.notes ? `<div class="mt-2 text-small text-muted border-top pt-2" style="white-space: pre-wrap;">📝 <strong>Catatan:</strong><br>${order.notes}</div>` : ''}
       </div>
 
@@ -258,12 +258,6 @@ function getStatusLabel(status) {
   return labels[status?.toLowerCase()] || status;
 }
 
-function formatOrderContent(items) {
-  if (Array.isArray(items)) {
-    return items.map(item => `📦 ${item.name} (${item.qty}x)`).join('\n');
-  }
-  return 'Detail tidak tersedia';
-}
 
 async function loadCustomersForDropdown() {
   const select = document.getElementById('customer');
@@ -383,10 +377,13 @@ async function handleOrderSubmit(e) {
   showLoading('Mengirim data omset...');
 
   try {
+    const itemsSummary = items.map(i => `${i.name} (${i.qty}x)`).join(', ');
+
     const orderData = {
       employee_id: user.id,
       customer_id: customerId,
       items: items, // JSONB column
+      items_summary: itemsSummary, // New field for string summary
       total_amount: totalAmount,
       status: 'Pending',
       notes: notes
