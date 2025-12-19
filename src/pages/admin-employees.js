@@ -76,20 +76,27 @@ async function loadEmployees() {
       <tr>
         <td>
           <strong>${emp.name}</strong><br>
-          <span class="badge badge-outline text-small">${emp.role}</span>
+          <span class="badge ${emp.role === 'admin' ? 'badge-primary' : (emp.role === 'manager' ? 'badge-warning' : 'badge-outline')} text-xs">
+            ${emp.role.toUpperCase()}
+          </span>
         </td>
         <td>${emp.email}</td>
-        <td><span class="badge badge-success">Aktif</span></td>
+        <td>
+          <span class="badge ${emp.status === 'inactive' ? 'badge-danger' : 'badge-success'}">
+            ${emp.status === 'inactive' ? 'Nonaktif' : 'Aktif'}
+          </span>
+        </td>
         <td>
           <div class="flex gap-xs">
             <button class="btn btn-outline btn-small" onclick="window.editEmployee('${emp.id}')" title="Edit Profil">✏️</button>
             <button class="btn btn-outline btn-small" onclick="window.resetEmployeePassword('${emp.email}')" title="Reset Password">🔑</button>
+            <button class="btn btn-outline btn-small text-danger" onclick="window.deleteEmployee('${emp.id}', '${emp.name}')" title="Hapus Akun">🗑️</button>
           </div>
         </td>
       </tr>
     `).join('');
 
-    // Global reset handler
+    // Global handlers
     window.resetEmployeePassword = async (email) => {
       const proceed = confirm(`Apakah Anda ingin mengirim email instruksi Reset Password ke ${email}?\n\nCatatan: Anda juga bisa mereset password secara manual melalui Dashboard Supabase > Authentication > Users.`);
       if (proceed) {
@@ -100,6 +107,20 @@ async function loadEmployees() {
         hideLoading();
         if (error) showNotification('Gagal: ' + error.message, 'danger');
         else showNotification('Email reset terkirim ke ' + email, 'success');
+      }
+    };
+
+    window.deleteEmployee = async (id, name) => {
+      const proceed = confirm(`⚠️ PERINGATAN: Menghapus "${name}" akan menghilangkan datanya dari tabel staf.\n\nAkun login (Auth) harus dihapus secara manual di Dashboard Supabase demi alasan keamanan.\n\nApakah Anda yakin ingin menghapus data profil staf ini?`);
+      if (proceed) {
+        showLoading('Menghapus data...');
+        const { error } = await db.deleteUser(id);
+        hideLoading();
+        if (error) showNotification('Gagal: ' + error.message, 'danger');
+        else {
+          showNotification('Data karyawan berhasil dihapus', 'success');
+          loadEmployees();
+        }
       }
     };
 
@@ -134,6 +155,13 @@ async function showAddEmployeeModal() {
             <input type="text" id="new-password" class="form-input" required placeholder="Minimal 6 karakter" value="123456">
             <small style="color: var(--text-muted);">Default password, minta karyawan segera menggantinya.</small>
           </div>
+          <div class="form-group">
+            <label class="form-label">Role / Jabatan</label>
+            <select id="new-role" class="form-input">
+               <option value="employee">Employee (Sales/Field)</option>
+               <option value="manager">Manager (Supervisor)</option>
+            </select>
+          </div>
         </form>
       </div>
       <div class="modal-footer">
@@ -156,6 +184,7 @@ async function showAddEmployeeModal() {
     const name = document.getElementById('new-name').value;
     const email = document.getElementById('new-email').value;
     const password = document.getElementById('new-password').value;
+    const role = document.getElementById('new-role').value;
 
     if (!name || !email || !password) {
       showNotification('Mohon lengkapi semua data', 'warning');
@@ -166,7 +195,7 @@ async function showAddEmployeeModal() {
     close();
 
     // Process
-    await handleAddEmployee(name, email, password);
+    await handleAddEmployee(name, email, password, role);
   };
 }
 
@@ -193,7 +222,17 @@ function showEditEmployeeModal(emp) {
             </div>
             <div class="form-group">
                <label class="form-label">Role / Jabatan</label>
-               <input type="text" id="edit-role" class="form-input" value="${emp.role || 'employee'}">
+               <select id="edit-role" class="form-input">
+                  <option value="employee" ${emp.role === 'employee' ? 'selected' : ''}>Employee (Sales/Field)</option>
+                  <option value="manager" ${emp.role === 'manager' ? 'selected' : ''}>Manager (Supervisor)</option>
+               </select>
+            </div>
+            <div class="form-group">
+               <label class="form-label">Status Akun</label>
+               <select id="edit-status" class="form-input">
+                  <option value="active" ${emp.status !== 'inactive' ? 'selected' : ''}>Aktif</option>
+                  <option value="inactive" ${emp.status === 'inactive' ? 'selected' : ''}>Nonaktif (Blokir Akses)</option>
+               </select>
             </div>
           </form>
         </div>
@@ -214,6 +253,7 @@ function showEditEmployeeModal(emp) {
   overlay.querySelector('#btn-edit-save').onclick = async () => {
     const newName = document.getElementById('edit-name').value;
     const newRole = document.getElementById('edit-role').value;
+    const newStatus = document.getElementById('edit-status').value;
 
     if (!newName) {
       showNotification('Nama tidak boleh kosong', 'warning');
@@ -221,14 +261,14 @@ function showEditEmployeeModal(emp) {
     }
 
     close();
-    await handleEditEmployee(emp.id, newName, newRole);
+    await handleEditEmployee(emp.id, newName, newRole, newStatus);
   };
 }
 
-async function handleEditEmployee(id, name, role) {
+async function handleEditEmployee(id, name, role, status) {
   showLoading('Menyimpan perubahan...');
   try {
-    const { error } = await db.updateUserProfile(id, { name, role });
+    const { error } = await db.updateUserProfile(id, { name, role, status });
     if (error) throw error;
 
     hideLoading();
@@ -240,7 +280,7 @@ async function handleEditEmployee(id, name, role) {
   }
 }
 
-async function handleAddEmployee(name, email, password) {
+async function handleAddEmployee(name, email, password, role) {
   showLoading('Mendaftarkan karyawan...');
 
   try {
@@ -281,7 +321,8 @@ async function handleAddEmployee(name, email, password) {
         id: newUserId,
         email: email,
         name: name,
-        role: 'employee',
+        role: role,
+        status: 'active',
         created_at: new Date().toISOString()
       });
 

@@ -160,6 +160,12 @@ async function handleLogin(e) {
       console.warn('Profile fetch error:', profileError);
     }
 
+    // 2b. Check Status
+    if (profile?.status === 'inactive') {
+      await auth.signOut();
+      throw new Error('Akun Anda dinonaktifkan oleh Admin. Hubungi pusat bantuan.');
+    }
+
     // 3. Update State
     state.updateState({
       user: authData.user,

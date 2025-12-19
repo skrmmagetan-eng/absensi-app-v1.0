@@ -67,6 +67,16 @@ async function handleRouting() {
     return;
   }
 
+  // Guard: Check if user is deactivated
+  if (user && profile?.status === 'inactive' && path !== 'login') {
+    console.warn('Account is deactivated.');
+    alert('⚠️ Akun Anda telah dinonaktifkan oleh Administrator. Silakan hubungi pusat bantuan.');
+    await auth.signOut();
+    state.reset();
+    window.location.hash = '#login';
+    return;
+  }
+
   // Double Check Security for Admin Routes (Real-time Validation)
   if (path.startsWith('admin')) {
     try {

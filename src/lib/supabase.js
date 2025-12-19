@@ -79,9 +79,17 @@ export const db = {
         const { data, error } = await supabase
             .from('users')
             .select('*')
-            .eq('role', 'employee')
+            .in('role', ['employee', 'manager'])
             .order('name');
         return { data, error };
+    },
+
+    async deleteUser(userId) {
+        const { error } = await supabase
+            .from('users')
+            .delete()
+            .eq('id', userId);
+        return { error };
     },
 
     // Customers
