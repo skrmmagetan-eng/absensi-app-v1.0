@@ -173,7 +173,19 @@ async function handleLogin(e) {
       isAuthenticated: true,
     });
 
-    // 4. Remember Me Logic (Local Storage)
+    // 4. Initialize Security Session
+    // Clear any previous closure flags and start new secure session
+    sessionStorage.setItem('app_session_active', 'true');
+    sessionStorage.setItem('app_session_start', Date.now().toString());
+    localStorage.removeItem('app_last_close_time');
+    
+    // Notify security manager that login was successful
+    if (window.securityManager) {
+      window.securityManager.startSession();
+      window.securityManager.clearClosureFlag();
+    }
+
+    // 5. Remember Me Logic (Local Storage)
     const rememberMe = document.getElementById('remember-me').checked;
     if (rememberMe) {
       storage.saveCredentials(email, password);

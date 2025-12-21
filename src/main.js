@@ -24,6 +24,255 @@ import { renderTargetsPage } from './pages/targets.js';
 import { renderAdminTargetsPage } from './pages/admin-targets.js';
 import { renderAdminCustomersPage } from './pages/admin-customers.js';
 
+// Security Configuration
+const SECURITY_CONFIG = {
+  SESSION_TIMEOUT: 8 * 60 * 60 * 1000, // 8 hours in milliseconds
+  INACTIVITY_TIMEOUT: 30 * 60 * 1000, // 30 minutes in milliseconds
+  VISIBILITY_TIMEOUT: 5 * 60 * 1000, // 5 minutes when tab is hidden
+};
+
+// Security Manager
+class SecurityManager {
+  constructor() {
+    this.sessionStartTime = null;
+    this.lastActivityTime = null;
+    this.visibilityTimer = null;
+    this.inactivityTimer = null;
+    this.isTabVisible = true;
+    this.wasAppClosed = false;
+    
+    this.init();
+  }
+
+  init() {
+    // Check if app was properly closed (no session token)
+    this.checkAppClosure();
+    
+    // Set up session tracking
+    this.startSession();
+    
+    // Set up visibility change detection
+    this.setupVisibilityTracking();
+    
+    // Set up activity tracking
+    this.setupActivityTracking();
+    
+    // Set up beforeunload detection
+    this.setupBeforeUnloadTracking();
+    
+    // Set up periodic security checks
+    this.setupPeriodicChecks();
+  }
+
+  checkAppClosure() {
+    const sessionToken = sessionStorage.getItem('app_session_active');
+    const lastCloseTime = localStorage.getItem('app_last_close_time');
+    
+    if (!sessionToken) {
+      this.wasAppClosed = true;
+      console.log('🔒 App was closed - requiring login');
+    } else if (lastCloseTime) {
+      const timeSinceClosure = Date.now() - parseInt(lastCloseTime);
+      if (timeSinceClosure > SECURITY_CONFIG.VISIBILITY_TIMEOUT) {
+        this.wasAppClosed = true;
+        console.log('🔒 App was closed for too long - requiring login');
+      }
+    }
+  }
+
+  startSession() {
+    this.sessionStartTime = Date.now();
+    this.lastActivityTime = Date.now();
+    sessionStorage.setItem('app_session_active', 'true');
+    sessionStorage.setItem('app_session_start', this.sessionStartTime.toString());
+    localStorage.removeItem('app_last_close_time');
+  }
+
+  setupVisibilityTracking() {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this.isTabVisible = false;
+        this.onTabHidden();
+      } else {
+        this.isTabVisible = true;
+        this.onTabVisible();
+      }
+    });
+  }
+
+  setupActivityTracking() {
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    events.forEach(event => {
+      document.addEventListener(event, () => {
+        this.updateActivity();
+      }, { passive: true });
+    });
+  }
+
+  setupBeforeUnloadTracking() {
+    window.addEventListener('beforeunload', () => {
+      // Mark app as being closed
+      sessionStorage.removeItem('app_session_active');
+      localStorage.setItem('app_last_close_time', Date.now().toString());
+    });
+  }
+
+  setupPeriodicChecks() {
+    // Check every minute for security violations
+    setInterval(() => {
+      this.performSecurityCheck();
+    }, 60 * 1000);
+  }
+
+  updateActivity() {
+    this.lastActivityTime = Date.now();
+    
+    // Clear inactivity timer
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+    }
+    
+    // Set new inactivity timer
+    this.inactivityTimer = setTimeout(() => {
+      this.handleInactivity();
+    }, SECURITY_CONFIG.INACTIVITY_TIMEOUT);
+  }
+
+  onTabHidden() {
+    console.log('🔒 Tab hidden - starting visibility timer');
+    
+    // Start visibility timeout
+    this.visibilityTimer = setTimeout(() => {
+      console.log('🔒 Tab hidden too long - logging out');
+      this.forceLogout('Tab was hidden for too long');
+    }, SECURITY_CONFIG.VISIBILITY_TIMEOUT);
+  }
+
+  onTabVisible() {
+    console.log('🔓 Tab visible again');
+    
+    // Clear visibility timer
+    if (this.visibilityTimer) {
+      clearTimeout(this.visibilityTimer);
+      this.visibilityTimer = null;
+    }
+    
+    // Update activity
+    this.updateActivity();
+    
+    // Perform security check
+    this.performSecurityCheck();
+  }
+
+  performSecurityCheck() {
+    const user = state.getState('user');
+    const profile = state.getState('profile');
+    
+    if (!user) return;
+    
+    const now = Date.now();
+    
+    // Check session timeout
+    if (now - this.sessionStartTime > SECURITY_CONFIG.SESSION_TIMEOUT) {
+      this.forceLogout('Session expired');
+      return;
+    }
+    
+    // Check inactivity timeout
+    if (now - this.lastActivityTime > SECURITY_CONFIG.INACTIVITY_TIMEOUT) {
+      this.forceLogout('Inactive for too long');
+      return;
+    }
+    
+    // Check if user account is still active
+    this.validateUserStatus();
+  }
+
+  async validateUserStatus() {
+    const user = state.getState('user');
+    if (!user) return;
+    
+    try {
+      const { data: profile, error } = await db.getUserProfile(user.id);
+      
+      if (error || !profile) {
+        this.forceLogout('User profile not found');
+        return;
+      }
+      
+      if (profile.status === 'inactive') {
+        this.forceLogout('Account has been deactivated');
+        return;
+      }
+      
+      // Update profile if changed
+      const currentProfile = state.getState('profile');
+      if (currentProfile?.role !== profile.role) {
+        state.updateState({ profile });
+        
+        // If role changed and user is on admin page, redirect
+        const currentPath = window.location.hash.replace('#', '');
+        if (currentPath.startsWith('admin') && !['admin', 'manager'].includes(profile.role)) {
+          window.location.hash = '#dashboard';
+        }
+      }
+      
+    } catch (error) {
+      console.error('Security check failed:', error);
+      this.forceLogout('Security validation failed');
+    }
+  }
+
+  handleInactivity() {
+    console.log('🔒 User inactive - logging out');
+    this.forceLogout('Inactive for too long');
+  }
+
+  async forceLogout(reason) {
+    console.log(`🔒 Force logout: ${reason}`);
+    
+    // Clear all timers
+    if (this.visibilityTimer) clearTimeout(this.visibilityTimer);
+    if (this.inactivityTimer) clearTimeout(this.inactivityTimer);
+    
+    // Clear session data
+    sessionStorage.clear();
+    localStorage.removeItem('app_last_close_time');
+    
+    // Sign out from Supabase
+    try {
+      await auth.signOut();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+    
+    // Clear application state
+    state.reset();
+    
+    // Show notification and redirect
+    if (reason !== 'Session expired') {
+      alert(`🔒 Sesi berakhir: ${reason}. Silakan login kembali.`);
+    }
+    
+    window.location.hash = '#login';
+  }
+
+  shouldRequireLogin() {
+    return this.wasAppClosed;
+  }
+
+  clearClosureFlag() {
+    this.wasAppClosed = false;
+  }
+}
+
+// Initialize Security Manager
+const securityManager = new SecurityManager();
+
+// Expose security manager globally for login page
+window.securityManager = securityManager;
+
 // Define Routes (using hash routing for simplicity in SPA without specific server config)
 const routes = {
   '': renderDashboardPage,
@@ -61,6 +310,13 @@ async function handleRouting() {
   let user = state.getState('user');
   let profile = state.getState('profile');
 
+  // Security Check: Force login if app was closed
+  if (securityManager.shouldRequireLogin() && path !== 'login') {
+    console.log('🔒 App was closed - forcing login');
+    window.location.hash = '#login';
+    return;
+  }
+
   // Guard: Redirect to login if not authenticated
   if (!user && path !== 'login') {
     window.location.hash = '#login';
@@ -71,9 +327,7 @@ async function handleRouting() {
   if (user && profile?.status === 'inactive' && path !== 'login') {
     console.warn('Account is deactivated.');
     alert('⚠️ Akun Anda telah dinonaktifkan oleh Administrator. Silakan hubungi pusat bantuan.');
-    await auth.signOut();
-    state.reset();
-    window.location.hash = '#login';
+    await securityManager.forceLogout('Account deactivated');
     return;
   }
 
@@ -101,6 +355,9 @@ async function handleRouting() {
 
   // Guard: Redirect logged in user away from login
   if (user && path === 'login') {
+    // Clear closure flag when successfully accessing login
+    securityManager.clearClosureFlag();
+    
     if (profile?.role === 'admin' || profile?.role === 'manager') window.location.hash = '#admin';
     else window.location.hash = '#dashboard';
     return;
@@ -115,6 +372,11 @@ async function handleRouting() {
   // Find handler
   const handler = routes[path];
   if (handler) {
+    // Clear closure flag when successfully navigating to authenticated pages
+    if (user && path !== 'login') {
+      securityManager.clearClosureFlag();
+    }
+    
     // Inject "Secure Area" indicator for admin
     if (path.startsWith('admin')) {
       document.body.classList.add('admin-mode');
@@ -135,16 +397,29 @@ async function handleRouting() {
 // Initialization
 async function init() {
   try {
-    // Check auth status
-    const user = await auth.getUser();
+    // Check auth status only if app wasn't closed
+    if (!securityManager.shouldRequireLogin()) {
+      const user = await auth.getUser();
 
-    if (user) {
-      const { data: profile } = await db.getUserProfile(user.id);
-      state.updateState({
-        user,
-        profile,
-        isAuthenticated: true
-      });
+      if (user) {
+        const { data: profile } = await db.getUserProfile(user.id);
+        
+        // Validate profile status
+        if (profile?.status === 'inactive') {
+          console.log('🔒 User account is inactive');
+          await securityManager.forceLogout('Account is inactive');
+          return;
+        }
+        
+        state.updateState({
+          user,
+          profile,
+          isAuthenticated: true
+        });
+        
+        // Start security session
+        securityManager.startSession();
+      }
     }
 
     // Start router
