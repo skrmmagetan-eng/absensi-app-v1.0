@@ -28,7 +28,7 @@ def csv_to_sql(csv_file):
             longitude = row['longitude'] if row['longitude'] else 'NULL'
             notes = row['catatan'].replace("'", "''") if row['catatan'] else ''
             
-            sql_row = f"('{name}', '{phone}', '{address}', (SELECT id FROM users WHERE email = '{petugas_email}'), {latitude}, {longitude}, '{notes}', NOW())"
+            sql_row = f"('{name}', '{phone}', '{address}', (SELECT id FROM users WHERE email = '{petugas_email}' AND role = 'employee' LIMIT 1), {latitude}, {longitude}, '{notes}', NOW())"
             rows.append(sql_row)
         
         print(',\n'.join(rows) + ';')
