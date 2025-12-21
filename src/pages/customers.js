@@ -409,38 +409,138 @@ window.viewCustomer = async (customerId) => {
 
   try {
     const { data: customer, error } = await db.getCustomerById(customerId);
-    hideLoading();
-
+    
     if (error) throw error;
+
+    // Get customer statistics
+    const { data: visitStats } = await db.supabase
+      .from('attendance')
+      .select('id, check_in_time, check_out_time, notes')
+      .eq('customer_id', customerId)
+      .order('check_in_time', { ascending: false })
+      .limit(5);
+
+    const totalVisits = visitStats?.length || 0;
+    const thisMonthVisits = visitStats?.filter(v => {
+      const visitDate = new Date(v.check_in_time);
+      const now = new Date();
+      return visitDate.getMonth() === now.getMonth() && visitDate.getFullYear() === now.getFullYear();
+    }).length || 0;
+
+    const lastVisit = visitStats?.[0];
+    const lastVisitText = lastVisit 
+      ? `${new Date(lastVisit.check_in_time).toLocaleDateString('id-ID')} (${Math.floor((Date.now() - new Date(lastVisit.check_in_time)) / (1000 * 60 * 60 * 24))} hari lalu)`
+      : 'Belum pernah dikunjungi';
+
+    hideLoading();
 
     const action = await createModal(
       `👤 ${customer.name}`,
       `
-        <div style="line-height: 1.8;">
-          <p><strong>📍 Alamat:</strong><br>${customer.address}</p>
-          <p><strong>📞 Telepon:</strong> ${customer.phone || 'Tidak ada'}</p>
-          <p><strong>🗺️ Koordinat:</strong> ${geo.formatCoordinates(customer.latitude, customer.longitude)}</p>
-          ${customer.notes ? `<p><strong>📝 Catatan:</strong><br>${customer.notes}</p>` : ''}
-          <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 1rem 0;">
-          <div class="card p-sm bg-tertiary">
-            <strong>🎯 Aktivitas Kunjungan</strong>
-            <p class="text-sm text-muted">Klik tombol di bawah saat Anda berada di lokasi pelanggan.</p>
+        <div style="line-height: 1.6;">
+          <!-- Customer Info -->
+          <div class="card p-sm bg-tertiary mb-md">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.8rem;">📍 ALAMAT</div>
+                <div style="font-weight: 500;">${customer.address || 'Tidak ada alamat'}</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.8rem;">📞 TELEPON</div>
+                <div style="font-weight: 500;">${customer.phone || 'Tidak ada nomor'}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Location Info -->
+          <div class="mb-md">
+            <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.5rem;">🗺️ KOORDINAT</div>
+            <div style="font-family: monospace; background: var(--bg-secondary); padding: 0.5rem; border-radius: 4px; font-size: 0.85rem;">
+              ${geo.formatCoordinates(customer.latitude, customer.longitude)}
+            </div>
+          </div>
+
+          <!-- Statistics -->
+          <div class="card p-sm bg-secondary mb-md">
+            <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--primary);">📊 Statistik Kunjungan</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; text-align: center; font-size: 0.85rem;">
+              <div>
+                <div style="font-weight: 600; color: var(--primary); font-size: 1.2rem;">${totalVisits}</div>
+                <div style="color: var(--text-muted);">Total</div>
+              </div>
+              <div>
+                <div style="font-weight: 600; color: var(--success); font-size: 1.2rem;">${thisMonthVisits}</div>
+                <div style="color: var(--text-muted);">Bulan Ini</div>
+              </div>
+              <div>
+                <div style="font-weight: 600; color: var(--warning); font-size: 0.9rem;">${lastVisitText.split('(')[0]}</div>
+                <div style="color: var(--text-muted);">Terakhir</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Visits -->
+          ${visitStats && visitStats.length > 0 ? `
+            <div class="mb-md">
+              <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--primary);">📅 Riwayat Terakhir</div>
+              <div style="max-height: 120px; overflow-y: auto;">
+                ${visitStats.slice(0, 3).map(visit => `
+                  <div style="display: flex; justify-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid var(--border-color); font-size: 0.85rem;">
+                    <div>
+                      <div style="font-weight: 500;">${new Date(visit.check_in_time).toLocaleDateString('id-ID')}</div>
+                      ${visit.notes ? `<div style="color: var(--text-muted); font-size: 0.8rem;">${visit.notes.substring(0, 30)}${visit.notes.length > 30 ? '...' : ''}</div>` : ''}
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 0.8rem;">
+                      ${new Date(visit.check_in_time).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}
+                      ${visit.check_out_time ? ` - ${new Date(visit.check_out_time).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Notes -->
+          ${customer.notes ? `
+            <div class="mb-md">
+              <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.5rem;">📝 CATATAN</div>
+              <div style="background: var(--bg-tertiary); padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; font-style: italic;">
+                "${customer.notes}"
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Action Info -->
+          <div class="card p-sm" style="background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%); color: white;">
+            <div style="font-weight: 600; margin-bottom: 0.5rem;">🎯 Catat Kunjungan</div>
+            <div style="font-size: 0.85rem; opacity: 0.9;">
+              Klik tombol di bawah saat Anda berada di lokasi customer untuk mencatat kunjungan dengan GPS dan foto.
+            </div>
           </div>
         </div>
       `,
       [
         { label: 'Tutup', action: 'close', type: 'outline' },
+        { label: '📞 Telepon', action: 'call', type: 'outline', hidden: !customer.phone },
+        { label: '🗺️ Buka Maps', action: 'maps', type: 'outline' },
         { label: '📍 Catat Kunjungan', action: 'visit', type: 'primary' }
-      ]
+      ].filter(btn => !btn.hidden)
     );
 
+    // Handle actions
     if (action === 'visit') {
       await handleLogVisit(customer);
+    } else if (action === 'call' && customer.phone) {
+      window.open(`tel:${customer.phone}`);
+    } else if (action === 'maps') {
+      const mapsUrl = `https://www.google.com/maps?q=${customer.latitude},${customer.longitude}`;
+      window.open(mapsUrl, '_blank');
     }
 
   } catch (error) {
     hideLoading();
-    showNotification('Gagal memuat detail pelanggan', 'danger');
+    console.error('Error loading customer details:', error);
+    showNotification('Gagal memuat detail pelanggan: ' + error.message, 'danger');
   }
 };
 
