@@ -405,20 +405,34 @@ async function handleAddCustomer(e) {
 
 // Global functions for customer actions
 window.viewCustomer = async (customerId) => {
+  console.log('🔍 Opening customer detail for ID:', customerId);
   showLoading('Memuat detail pelanggan...');
 
   try {
+    // Get customer data
     const { data: customer, error } = await db.getCustomerById(customerId);
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error loading customer:', error);
+      throw error;
+    }
+
+    console.log('✅ Customer loaded:', customer);
 
     // Get customer statistics
-    const { data: visitStats } = await db.supabase
+    console.log('📊 Loading visit statistics...');
+    const { data: visitStats, error: visitError } = await db.supabase
       .from('attendance')
       .select('id, check_in_time, check_out_time, notes')
       .eq('customer_id', customerId)
       .order('check_in_time', { ascending: false })
       .limit(5);
+
+    if (visitError) {
+      console.warn('⚠️ Error loading visit stats:', visitError);
+    }
+
+    console.log('📈 Visit stats loaded:', visitStats);
 
     const totalVisits = visitStats?.length || 0;
     const thisMonthVisits = visitStats?.filter(v => {
@@ -432,11 +446,11 @@ window.viewCustomer = async (customerId) => {
       ? `${new Date(lastVisit.check_in_time).toLocaleDateString('id-ID')} (${Math.floor((Date.now() - new Date(lastVisit.check_in_time)) / (1000 * 60 * 60 * 24))} hari lalu)`
       : 'Belum pernah dikunjungi';
 
+    console.log('📊 Statistics calculated:', { totalVisits, thisMonthVisits, lastVisitText });
+
     hideLoading();
 
-    const action = await createModal(
-      `👤 ${customer.name}`,
-      `
+    const modalContent = `
         <div style="line-height: 1.6;">
           <!-- Customer Info -->
           <div class="card p-sm bg-tertiary mb-md">
@@ -498,7 +512,14 @@ window.viewCustomer = async (customerId) => {
                 `).join('')}
               </div>
             </div>
-          ` : ''}
+          ` : `
+            <div class="mb-md">
+              <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--primary);">📅 Riwayat Terakhir</div>
+              <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-style: italic;">
+                Belum ada riwayat kunjungan
+              </div>
+            </div>
+          `}
 
           <!-- Notes -->
           ${customer.notes ? `
@@ -518,7 +539,13 @@ window.viewCustomer = async (customerId) => {
             </div>
           </div>
         </div>
-      `,
+      `;
+
+    console.log('🎨 Modal content prepared, showing modal...');
+
+    const action = await createModal(
+      `👤 ${customer.name}`,
+      modalContent,
       [
         { label: 'Tutup', action: 'close', type: 'outline' },
         { label: '📞 Telepon', action: 'call', type: 'outline', hidden: !customer.phone },
@@ -526,6 +553,8 @@ window.viewCustomer = async (customerId) => {
         { label: '📍 Catat Kunjungan', action: 'visit', type: 'primary' }
       ].filter(btn => !btn.hidden)
     );
+
+    console.log('👆 User action:', action);
 
     // Handle actions
     if (action === 'visit') {
@@ -539,7 +568,7 @@ window.viewCustomer = async (customerId) => {
 
   } catch (error) {
     hideLoading();
-    console.error('Error loading customer details:', error);
+    console.error('❌ Error in viewCustomer:', error);
     showNotification('Gagal memuat detail pelanggan: ' + error.message, 'danger');
   }
 };

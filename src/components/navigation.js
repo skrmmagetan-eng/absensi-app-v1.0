@@ -108,11 +108,7 @@ export function renderNavbar() {
 }
 
 export function renderBottomNav() {
-  return `
-    <div style="margin-top: auto;">
-      ${versionManager.renderVersionFooter()}
-    </div>
-  `;
+  return '';
 }
 
 function getEmployeeLinks() {
