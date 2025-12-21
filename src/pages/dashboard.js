@@ -158,50 +158,125 @@ function renderTodayAttendance(attendance) {
   }
 
   container.innerHTML = `
-    <div class="table-container">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Pelanggan</th>
-            <th>Check In</th>
-            <th>Check Out</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${attendance.map((item) => {
-    const isOngoing = !item.check_out_time;
-    const clickHandler = isOngoing ? `onclick="openCheckOutModal('${item.id}', '${item.customers?.name || 'Pelanggan'}')"` : '';
-    const rowStyle = isOngoing ? 'cursor: pointer; background-color: rgba(255, 193, 7, 0.05);' : '';
-
-    return `
-            <tr ${clickHandler} style="${rowStyle}" title="${isOngoing ? 'Klik untuk Lapor & Check Out' : ''}">
-              <td>
-                <strong>${item.customers?.name || 'N/A'}</strong><br>
-                <small style="color: var(--text-muted);">${item.customers?.address || ''}</small>
-              </td>
-              <td>
-                ${formatTime(item.check_in_time)}<br>
-                <small style="color: var(--text-muted);">${getTimeAgo(item.check_in_time)}</small>
-              </td>
-              <td>
-                ${item.check_out_time ? formatTime(item.check_out_time) : '-'}
-              </td>
-              <td>
-                ${item.check_out_time
-        ? '<span class="badge badge-success">Selesai</span>'
-        : '<span class="badge badge-warning">📝 Lapor & Check Out</span>'
-      }
-              </td>
-            </tr>
-          `}).join('')}
-        </tbody>
-      </table>
+    <div class="visits-table-container">
+      ${attendance.map((item, index) => {
+        const isOngoing = !item.check_out_time;
+        const statusText = isOngoing ? 'aktif' : 'selesai';
+        const visitDate = formatDate(new Date(item.check_in_time));
+        const expandId = `visit-${item.id}`;
+        
+        return `
+          <div class="visit-row" data-visit-id="${item.id}">
+            <div class="visit-main" onclick="toggleVisitDetails('${expandId}')">
+              <div class="visit-info">
+                <div class="visit-customer">
+                  <strong>${item.customers?.name || 'N/A'}</strong>
+                  <span class="visit-status ${isOngoing ? 'active' : 'completed'}">(${statusText})</span>
+                </div>
+                <div class="visit-address">${item.customers?.address || 'Alamat tidak tersedia'}</div>
+                <div class="visit-date">${visitDate}</div>
+              </div>
+              <div class="visit-expand-icon">
+                <span class="expand-arrow">▼</span>
+              </div>
+            </div>
+            
+            <div class="visit-details" id="${expandId}" style="display: none;">
+              <div class="visit-details-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Check In:</span>
+                  <span class="detail-value">${formatTime(item.check_in_time)} (${getTimeAgo(item.check_in_time)})</span>
+                </div>
+                
+                <div class="detail-item">
+                  <span class="detail-label">Check Out:</span>
+                  <span class="detail-value">${item.check_out_time ? `${formatTime(item.check_out_time)} (${getTimeAgo(item.check_out_time)})` : 'Belum check out'}</span>
+                </div>
+                
+                ${item.notes ? `
+                <div class="detail-item full-width">
+                  <span class="detail-label">Catatan:</span>
+                  <span class="detail-value">${item.notes}</span>
+                </div>
+                ` : ''}
+                
+                <div class="detail-item">
+                  <span class="detail-label">Lokasi Check In:</span>
+                  <span class="detail-value">${item.check_in_latitude && item.check_in_longitude ? `${item.check_in_latitude}, ${item.check_in_longitude}` : 'Tidak tersedia'}</span>
+                </div>
+                
+                ${item.check_out_latitude && item.check_out_longitude ? `
+                <div class="detail-item">
+                  <span class="detail-label">Lokasi Check Out:</span>
+                  <span class="detail-value">${item.check_out_latitude}, ${item.check_out_longitude}</span>
+                </div>
+                ` : ''}
+                
+                ${item.photo_url ? `
+                <div class="detail-item full-width">
+                  <span class="detail-label">Foto Bukti:</span>
+                  <div class="detail-value">
+                    <img src="${item.photo_url}" alt="Foto bukti kunjungan" class="visit-photo" onclick="openPhotoModal('${item.photo_url}')">
+                  </div>
+                </div>
+                ` : ''}
+                
+                ${isOngoing ? `
+                <div class="detail-item full-width">
+                  <button class="btn btn-warning" onclick="openCheckOutModal('${item.id}', '${item.customers?.name || 'Pelanggan'}')">
+                    📝 Lapor & Check Out
+                  </button>
+                </div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('')}
     </div>
   `;
 
-  // Expose global function for onclick
+  // Expose global functions
   window.openCheckOutModal = openCheckOutModal;
+  window.toggleVisitDetails = toggleVisitDetails;
+  window.openPhotoModal = openPhotoModal;
+}
+
+// Function to toggle visit details
+function toggleVisitDetails(expandId) {
+  const detailsElement = document.getElementById(expandId);
+  const arrow = detailsElement.parentElement.querySelector('.expand-arrow');
+  
+  if (detailsElement.style.display === 'none') {
+    detailsElement.style.display = 'block';
+    arrow.style.transform = 'rotate(180deg)';
+  } else {
+    detailsElement.style.display = 'none';
+    arrow.style.transform = 'rotate(0deg)';
+  }
+}
+
+// Function to open photo modal
+function openPhotoModal(photoUrl) {
+  const modalId = 'photo-modal-' + Date.now();
+  
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = modalId;
+  
+  overlay.innerHTML = `
+    <div class="modal" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3 class="modal-title">📷 Foto Bukti Kunjungan</h3>
+        <button class="modal-close" onclick="document.getElementById('${modalId}').remove()">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align: center;">
+        <img src="${photoUrl}" alt="Foto bukti kunjungan" style="max-width: 100%; height: auto; border-radius: var(--radius-md);">
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
 }
 
 // Modal Logic for Reporting & Checkout
