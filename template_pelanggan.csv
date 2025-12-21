@@ -1,12 +1,11 @@
 nama,telepon,alamat,petugas,latitude,longitude,catatan
-Pak Sukadi,081234567890,Jl. Raya No. 1 Ponorogo,wicaksonopurwanto@gmail.com,-7.668678,111.287454,Peternak broiler
-Adul Kodir,081234567891,Jl. Merdeka No. 2 Ponorogo,wicaksonopurwanto@gmail.com,-7.639640,111.330534,Peternak layer
-Budi Santoso,081234567892,Jl. Sudirman No. 3 Ponorogo,wicaksonopurwanto@gmail.com,-7.633924,111.289592,Peternak koloni
-Siti Aminah,081234567893,Jl. Ahmad Yani No. 4 Ponorogo,anggaskharisma@gmail.com,-7.640000,111.290000,Peternak ayam kampung
-Joko Widodo,081234567894,Jl. Gatot Subroto No. 5 Ponorogo,anggaskharisma@gmail.com,-7.650000,111.300000,Peternak bebek
-Rina Sari,081234567895,Jl. Diponegoro No. 6 Ponorogo,mazis977@gmail.com,-7.660000,111.310000,Peternak burung puyuh
-Ahmad Fauzi,081234567896,Jl. Kartini No. 7 Ponorogo,mazis977@gmail.com,-7.670000,111.320000,Peternak lele
-Dewi Sartika,081234567897,Jl. Cut Nyak Dien No. 8 Ponorogo,achmadverry20@gmail.com,-7.680000,111.330000,Peternak gurame
-Bambang Sutrisno,081234567898,Jl. Pangeran Antasari No. 9 Ponorogo,achmadverry20@gmail.com,-7.690000,111.340000,Peternak nila
-Sari Indah,081234567899,Jl. Veteran No. 10 Ponorogo,dwikydiaspriambodo@gmail.com,-7.700000,111.350000,Peternak kambing
-Hendra Gunawan,081234567900,Jl. Pemuda No. 11 Ponorogo,dwikydiaspriambodo@gmail.com,-7.710000,111.360000,Peternak sapi
+NAMA_PELANGGAN_1,TELEPON_1,ALAMAT_LENGKAP_1,wicaksonopurwanto@gmail.com,LATITUDE_1,LONGITUDE_1,CATATAN_1
+NAMA_PELANGGAN_2,TELEPON_2,ALAMAT_LENGKAP_2,wicaksonopurwanto@gmail.com,LATITUDE_2,LONGITUDE_2,CATATAN_2
+NAMA_PELANGGAN_3,TELEPON_3,ALAMAT_LENGKAP_3,anggaskharisma@gmail.com,LATITUDE_3,LONGITUDE_3,CATATAN_3
+NAMA_PELANGGAN_4,TELEPON_4,ALAMAT_LENGKAP_4,anggaskharisma@gmail.com,LATITUDE_4,LONGITUDE_4,CATATAN_4
+NAMA_PELANGGAN_5,TELEPON_5,ALAMAT_LENGKAP_5,mazis977@gmail.com,LATITUDE_5,LONGITUDE_5,CATATAN_5
+NAMA_PELANGGAN_6,TELEPON_6,ALAMAT_LENGKAP_6,mazis977@gmail.com,LATITUDE_6,LONGITUDE_6,CATATAN_6
+NAMA_PELANGGAN_7,TELEPON_7,ALAMAT_LENGKAP_7,achmadverry20@gmail.com,LATITUDE_7,LONGITUDE_7,CATATAN_7
+NAMA_PELANGGAN_8,TELEPON_8,ALAMAT_LENGKAP_8,achmadverry20@gmail.com,LATITUDE_8,LONGITUDE_8,CATATAN_8
+NAMA_PELANGGAN_9,TELEPON_9,ALAMAT_LENGKAP_9,dwikydiaspriambodo@gmail.com,LATITUDE_9,LONGITUDE_9,CATATAN_9
+NAMA_PELANGGAN_10,TELEPON_10,ALAMAT_LENGKAP_10,dwikydiaspriambodo@gmail.com,LATITUDE_10,LONGITUDE_10,CATATAN_10
