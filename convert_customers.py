@@ -14,6 +14,38 @@ def clean_text(text):
         return None
     return text.replace("'", "''").strip()
 
+def parse_date(date_str):
+    """Parse date from various formats"""
+    if not date_str or date_str.strip() == '':
+        return 'NOW()'
+    
+    try:
+        # Handle formats like "2/5/2025 14:45" or "13/05/2025 13:23:59"
+        date_str = date_str.strip()
+        
+        # Try different date formats
+        formats = [
+            '%d/%m/%Y %H:%M',
+            '%d/%m/%Y %H:%M:%S',
+            '%m/%d/%Y %H:%M',
+            '%m/%d/%Y %H:%M:%S',
+            '%d/%m/%Y',
+            '%m/%d/%Y'
+        ]
+        
+        for fmt in formats:
+            try:
+                dt = datetime.strptime(date_str, fmt)
+                return f"'{dt.strftime('%Y-%m-%d %H:%M:%S')}'"
+            except ValueError:
+                continue
+                
+        # If no format matches, return NOW()
+        return 'NOW()'
+        
+    except Exception:
+        return 'NOW()'
+
 def parse_coordinates(location_str):
     """Parse coordinates from location string"""
     if not location_str or location_str.strip() == '' or 'Location not available' in location_str:
@@ -43,6 +75,7 @@ def get_employee_email(petugas_name):
 
 def csv_to_sql(csv_file):
     print("-- Generated SQL INSERT statements for customers from DataPelanggan.csv")
+    print("-- Customer registration dates are preserved from the original CSV data")
     print("-- Run this in Supabase SQL Editor after duplicate cleanup")
     print()
     print("-- Step 1: Verify employees are available")
@@ -59,6 +92,7 @@ def csv_to_sql(csv_file):
         
         for row in reader:
             # Extract data
+            tanggal = row.get('Tanggal', '')
             nama = clean_text(row.get('Nama', ''))
             alamat = clean_text(row.get('Alamat', ''))
             desa = clean_text(row.get('Desa', ''))
@@ -84,6 +118,9 @@ def csv_to_sql(csv_file):
                 
             unique_customers[unique_key] = True
             
+            # Parse registration date
+            created_at = parse_date(tanggal)
+            
             # Parse coordinates
             lat, lng = parse_coordinates(lokasi)
             
@@ -103,14 +140,14 @@ def csv_to_sql(csv_file):
             lng_str = str(lng) if lng is not None else 'NULL'
             notes_str = f"'{notes}'" if notes else 'NULL'
             
-            sql_row = f"('{nama}', NULL, '{full_address}', (SELECT id FROM users WHERE email = '{employee_email}' LIMIT 1), {lat_str}, {lng_str}, {notes_str}, NOW())"
+            sql_row = f"('{nama}', NULL, '{full_address}', (SELECT id FROM users WHERE email = '{employee_email}' LIMIT 1), {lat_str}, {lng_str}, {notes_str}, {created_at})"
             rows.append(sql_row)
     
     # Print all rows
     print(',\n'.join(rows) + ';')
     
     print()
-    print("-- Step 3: Verify inserted customers")
+    print("-- Step 3: Verify inserted customers with registration dates")
     print("""SELECT 
     c.name as customer_name,
     c.address,
@@ -118,21 +155,35 @@ def csv_to_sql(csv_file):
     c.latitude,
     c.longitude,
     c.notes,
-    c.created_at
+    c.created_at as registration_date
 FROM public.customers c
 JOIN public.users u ON c.employee_id = u.id
-ORDER BY u.name, c.name;""")
+ORDER BY c.created_at DESC, u.name, c.name;""")
     
     print()
     print("-- Step 4: Count customers per employee")
     print("""SELECT 
     u.name as employee_name,
-    COUNT(c.id) as total_customers
+    COUNT(c.id) as total_customers,
+    MIN(c.created_at) as first_registration,
+    MAX(c.created_at) as last_registration
 FROM public.users u
 LEFT JOIN public.customers c ON u.id = c.employee_id
 WHERE u.role = 'employee'
 GROUP BY u.id, u.name
 ORDER BY u.name;""")
+    
+    print()
+    print("-- Step 5: Customer registration timeline")
+    print("""SELECT 
+    DATE(c.created_at) as registration_date,
+    COUNT(*) as customers_registered,
+    STRING_AGG(DISTINCT u.name, ', ') as employees_active
+FROM public.customers c
+JOIN public.users u ON c.employee_id = u.id
+GROUP BY DATE(c.created_at)
+ORDER BY registration_date DESC
+LIMIT 20;""")
     
     print()
     print(f"-- Total unique customers processed: {len(rows)}")
