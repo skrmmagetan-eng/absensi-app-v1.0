@@ -352,20 +352,222 @@ function renderLatestVisits(visits) {
     return;
   }
 
-  container.innerHTML = visits.map(v => `
-    <div class="flex justify-between items-center p-md hover-bg" style="border-bottom: 1px solid var(--border-color);">
-      <div>
-        <div class="font-bold text-sm" style="color: var(--text-primary);">${v.customers?.name || 'Pelanggan'}</div>
-        <div class="text-xs text-muted">oleh ${v.users?.name || 'User'}</div>
-      </div>
-      <div class="text-right">
-        <div class="badge ${v.check_out_time ? 'badge-success' : 'badge-warning'} badge-small">
-            ${v.check_out_time ? 'Selesai' : 'Aktif'}
+  container.innerHTML = `
+    <div class="flex flex-col gap-2">
+      ${visits.map(v => `
+        <div class="visit-card-expandable" onclick="this.classList.toggle('active')" data-visit-id="${v.id}">
+          <div class="visit-main-row">
+            <div class="visit-left-section">
+              <div class="visit-customer-name">${v.customers?.name || 'Unknown'}</div>
+              <div class="visit-customer-address">oleh ${v.users?.name || 'User'}</div>
+            </div>
+            <div class="visit-right-section">
+              <span class="visit-status-badge ${v.check_out_time ? 'status-completed' : 'status-ongoing'}">
+                ${v.check_out_time ? 'Selesai' : 'Berlangsung'}
+              </span>
+              <div class="visit-date">${new Date(v.check_in_time).toLocaleDateString('id-ID')}</div>
+            </div>
+          </div>
+          
+          <!-- Expanded Detail Section -->
+          <div class="visit-expand-content">
+            <div class="visit-detail-separator"></div>
+            <div class="visit-time-grid">
+              <div class="time-item">
+                <div class="time-label">CHECK IN</div>
+                <div class="time-value">${new Date(v.check_in_time).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</div>
+              </div>
+              <div class="time-item">
+                <div class="time-label">CHECK OUT</div>
+                <div class="time-value">${v.check_out_time ? new Date(v.check_out_time).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}) : 'Belum checkout'}</div>
+              </div>
+            </div>
+
+            ${v.notes || v.photo_url ? `
+              <div class="visit-additional-info">
+                ${v.notes ? `
+                  <div class="visit-notes">
+                    <div class="notes-label">📝 Catatan Kunjungan:</div>
+                    <div class="notes-content">"${v.notes}"</div>
+                  </div>
+                ` : ''}
+                ${v.photo_url ? `
+                  <div class="visit-photo">
+                    <a href="${v.photo_url}" target="_blank" class="photo-link">
+                      📸 Lihat Bukti Foto Kunjungan
+                    </a>
+                  </div>
+                ` : ''}
+              </div>
+            ` : ''}
+          </div>
         </div>
-        <div class="text-xs text-muted mt-1">${new Date(v.check_in_time).toLocaleDateString('id-ID')}</div>
-      </div>
+      `).join('')}
     </div>
-  `).join('');
+    
+    <style>
+      .visit-card-expandable {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        overflow: hidden;
+      }
+      
+      .visit-card-expandable:hover {
+        border-color: var(--primary);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      
+      .visit-main-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        border-bottom: 1px solid transparent;
+      }
+      
+      .visit-card-expandable.active .visit-main-row {
+        border-bottom-color: #e5e7eb;
+      }
+      
+      .visit-left-section {
+        flex: 1;
+      }
+      
+      .visit-customer-name {
+        font-weight: 600;
+        font-size: 16px;
+        color: var(--primary);
+        margin-bottom: 4px;
+      }
+      
+      .visit-customer-address {
+        font-size: 14px;
+        color: #6b7280;
+      }
+      
+      .visit-right-section {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+      }
+      
+      .visit-status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+      
+      .status-completed {
+        background: #dcfce7;
+        color: #166534;
+      }
+      
+      .status-ongoing {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      
+      .visit-date {
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+      }
+      
+      .visit-expand-content {
+        display: none;
+        padding: 0 16px 16px 16px;
+        animation: slideDown 0.3s ease-out;
+      }
+      
+      .visit-card-expandable.active .visit-expand-content {
+        display: block;
+      }
+      
+      .visit-detail-separator {
+        height: 1px;
+        background: #e5e7eb;
+        margin-bottom: 16px;
+      }
+      
+      .visit-time-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      
+      .time-item {
+        background: #f9fafb;
+        padding: 12px;
+        border-radius: 6px;
+      }
+      
+      .time-label {
+        font-size: 11px;
+        color: #6b7280;
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+      
+      .time-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #111827;
+      }
+      
+      .visit-additional-info {
+        border-top: 1px solid #e5e7eb;
+        padding-top: 16px;
+      }
+      
+      .visit-notes {
+        margin-bottom: 12px;
+      }
+      
+      .notes-label {
+        font-size: 12px;
+        color: #6b7280;
+        margin-bottom: 6px;
+      }
+      
+      .notes-content {
+        background: #f3f4f6;
+        padding: 10px;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #374151;
+        font-style: italic;
+      }
+      
+      .photo-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--primary);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 8px 12px;
+        background: #eff6ff;
+        border-radius: 6px;
+        transition: background 0.2s;
+      }
+      
+      .photo-link:hover {
+        background: #dbeafe;
+      }
+      
+      @keyframes slideDown {
+        from { opacity: 0; max-height: 0; }
+        to { opacity: 1; max-height: 500px; }
+      }
+    </style>
+  `;
 }
 
 function getScoreColor(score) {
