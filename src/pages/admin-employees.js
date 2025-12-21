@@ -126,11 +126,15 @@ async function loadEmployees() {
         showLoading('Membuat kode reset...');
         
         try {
+          console.log('🔐 Testing custom reset for:', { email, phone, name });
+          
           const result = await customReset.initiateCustomReset(email, phone, name);
           
           hideLoading();
           
           if (result.success) {
+            console.log('✅ Custom reset successful:', result);
+            
             // Show success modal with WhatsApp link
             const modal = createModal('Reset Password Berhasil', `
               <div class="text-center">
@@ -171,13 +175,37 @@ async function loadEmployees() {
             });
             
           } else {
-            showNotification(`Gagal membuat kode reset: ${result.error}`, 'danger');
+            console.error('❌ Custom reset failed:', result.error);
+            
+            // Show detailed error with troubleshooting
+            let errorMessage = `Gagal membuat kode reset: ${result.error}`;
+            let troubleshooting = '';
+            
+            if (result.error.includes('password_reset_tokens')) {
+              troubleshooting = `\n\n🔧 TROUBLESHOOTING:\n1. Buka Supabase Dashboard\n2. Pilih SQL Editor\n3. Jalankan script create_reset_tokens_table.sql\n4. Coba lagi setelah tabel dibuat`;
+            } else if (result.error.includes('Permission denied')) {
+              troubleshooting = `\n\n🔧 TROUBLESHOOTING:\n1. Pastikan Anda login sebagai admin\n2. Cek RLS policies di Supabase\n3. Verifikasi role user di database`;
+            } else if (result.error.includes('User tidak ditemukan')) {
+              troubleshooting = `\n\n🔧 TROUBLESHOOTING:\n1. Pastikan email karyawan terdaftar\n2. Cek tabel users di database\n3. Verifikasi data karyawan`;
+            }
+            
+            showNotification(errorMessage, 'danger');
+            
+            if (troubleshooting) {
+              setTimeout(() => {
+                alert(errorMessage + troubleshooting);
+              }, 1000);
+            }
           }
           
         } catch (error) {
           hideLoading();
-          console.error('Custom reset error:', error);
+          console.error('❌ Unexpected error:', error);
           showNotification('Terjadi kesalahan sistem', 'danger');
+          
+          setTimeout(() => {
+            alert(`⚠️ SISTEM ERROR:\n\n${error.message}\n\n🔧 LANGKAH DEBUG:\n1. Buka Developer Tools (F12)\n2. Lihat Console untuk error detail\n3. Pastikan tabel database sudah dibuat\n4. Cek koneksi internet`);
+          }, 1000);
         }
       }
     };

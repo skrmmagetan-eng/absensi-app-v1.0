@@ -21,6 +21,8 @@ export const customReset = {
     expiresAt.setMinutes(expiresAt.getMinutes() + 30); // 30 minutes expiry
 
     try {
+      console.log('💾 Saving token to database:', { userId, email, token });
+      
       const { data, error } = await db.supabase
         .from('password_reset_tokens')
         .upsert({
@@ -34,10 +36,27 @@ export const customReset = {
           onConflict: 'user_id'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database save error:', error);
+        
+        // Check if table exists
+        if (error.message.includes('relation "password_reset_tokens" does not exist')) {
+          throw new Error('Tabel password_reset_tokens belum dibuat. Silakan jalankan SQL setup di Supabase Dashboard.');
+        }
+        
+        // Check RLS policy
+        if (error.message.includes('policy')) {
+          throw new Error('Permission denied. Pastikan Anda login sebagai admin.');
+        }
+        
+        throw new Error(`Database error: ${error.message}`);
+      }
+
+      console.log('✅ Token saved successfully');
       return { success: true, expiresAt };
+      
     } catch (error) {
-      console.error('Error saving reset token:', error);
+      console.error('❌ Save token error:', error);
       return { success: false, error: error.message };
     }
   },
@@ -135,6 +154,8 @@ Jangan bagikan kode ini`;
   // Main function to initiate custom reset
   async initiateCustomReset(email, phoneNumber, userName) {
     try {
+      console.log('🔐 Starting custom reset for:', email);
+      
       // 1. Get user data
       const { data: user, error: userError } = await db.supabase
         .from('users')
@@ -142,18 +163,29 @@ Jangan bagikan kode ini`;
         .eq('email', email)
         .single();
 
-      if (userError || !user) {
-        throw new Error('User tidak ditemukan');
+      if (userError) {
+        console.error('User lookup error:', userError);
+        throw new Error(`Database error: ${userError.message}`);
       }
+      
+      if (!user) {
+        throw new Error('User tidak ditemukan di database');
+      }
+
+      console.log('✅ User found:', user);
 
       // 2. Generate token
       const token = this.generateResetToken();
+      console.log('✅ Token generated:', token);
 
       // 3. Save token to database
       const saveResult = await this.saveResetToken(user.id, email, token);
       if (!saveResult.success) {
-        throw new Error(saveResult.error);
+        console.error('Save token error:', saveResult.error);
+        throw new Error(`Gagal menyimpan token: ${saveResult.error}`);
       }
+
+      console.log('✅ Token saved to database');
 
       // 4. Generate messages
       const whatsappMessage = this.generateWhatsAppMessage(
@@ -166,10 +198,12 @@ Jangan bagikan kode ini`;
       // 5. Create WhatsApp link
       const phone = phoneNumber || user.phone;
       if (!phone) {
-        throw new Error('Nomor telepon tidak tersedia');
+        throw new Error('Nomor telepon tidak tersedia untuk karyawan ini');
       }
 
       const whatsappLink = this.createWhatsAppLink(phone, whatsappMessage);
+
+      console.log('✅ Custom reset completed successfully');
 
       return {
         success: true,
@@ -181,7 +215,7 @@ Jangan bagikan kode ini`;
       };
 
     } catch (error) {
-      console.error('Custom reset error:', error);
+      console.error('❌ Custom reset error:', error);
       return {
         success: false,
         error: error.message
