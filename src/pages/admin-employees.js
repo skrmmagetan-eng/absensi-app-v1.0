@@ -105,8 +105,7 @@ async function loadEmployees() {
         <td>
           <div class="flex gap-xs">
             <button class="btn btn-outline btn-small" onclick="window.editEmployee('${emp.id}')" title="Edit Profil">✏️</button>
-            <button class="btn btn-outline btn-small" onclick="window.resetEmployeePassword('${emp.email}')" title="Reset Password (Email)">📧</button>
-            <button class="btn btn-outline btn-small" onclick="window.customResetPassword('${emp.email}', '${emp.phone}', '${emp.name}')" title="Reset Password (WhatsApp)">📱</button>
+            <button class="btn btn-outline btn-small" onclick="window.customResetPassword('${emp.email}', '${emp.phone}', '${emp.name}')" title="Reset Password">🔑</button>
             <button class="btn btn-outline btn-small text-danger" onclick="window.deleteEmployee('${emp.id}', '${emp.name}')" title="Hapus Akun">🗑️</button>
           </div>
         </td>
@@ -206,48 +205,6 @@ async function loadEmployees() {
           setTimeout(() => {
             alert(`⚠️ SISTEM ERROR:\n\n${error.message}\n\n🔧 LANGKAH DEBUG:\n1. Buka Developer Tools (F12)\n2. Lihat Console untuk error detail\n3. Pastikan tabel database sudah dibuat\n4. Cek koneksi internet`);
           }, 1000);
-        }
-      }
-    };
-
-    window.resetEmployeePassword = async (email) => {
-      const proceed = confirm(`Apakah Anda ingin mengirim email instruksi Reset Password ke ${email}?\n\nCatatan: Pastikan email template sudah dikonfigurasi di Supabase Dashboard.`);
-      if (proceed) {
-        showLoading('Mengirim permintaan reset...');
-        
-        try {
-          const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin + '#login',
-          });
-          
-          hideLoading();
-          
-          if (error) {
-            console.error('Reset password error:', error);
-            showNotification(`Gagal mengirim email reset: ${error.message}`, 'danger');
-            
-            // Show additional troubleshooting info
-            if (error.message.includes('Email not confirmed')) {
-              alert('⚠️ TROUBLESHOOTING:\n\n1. Email belum dikonfirmasi\n2. Cek folder spam/junk\n3. Pastikan email template aktif di Supabase\n4. Coba reset manual di Supabase Dashboard');
-            } else if (error.message.includes('Invalid email')) {
-              alert('⚠️ Email tidak valid atau tidak terdaftar di sistem');
-            } else {
-              alert(`⚠️ TROUBLESHOOTING:\n\nError: ${error.message}\n\n1. Cek konfigurasi SMTP di Supabase\n2. Pastikan email template "Reset Password" sudah diaktifkan\n3. Cek Authentication > Settings > Email Templates\n4. Verifikasi SMTP credentials`);
-            }
-          } else {
-            console.log('Reset password success:', data);
-            showNotification(`✅ Email reset password berhasil dikirim ke ${email}`, 'success');
-            
-            // Show additional info
-            setTimeout(() => {
-              alert(`📧 EMAIL TERKIRIM!\n\n✅ Instruksi reset password telah dikirim ke: ${email}\n\n📝 Instruksi untuk user:\n1. Cek inbox email (termasuk folder spam)\n2. Klik link "Reset Password" di email\n3. Masukkan password baru\n4. Login dengan password baru\n\n⏰ Link akan expired dalam 1 jam`);
-            }, 1000);
-          }
-        } catch (err) {
-          hideLoading();
-          console.error('Unexpected error:', err);
-          showNotification('Terjadi kesalahan sistem', 'danger');
-          alert(`⚠️ SISTEM ERROR:\n\n${err.message}\n\nSilakan coba lagi atau reset manual di Supabase Dashboard`);
         }
       }
     };
