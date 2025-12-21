@@ -2,6 +2,7 @@ import { db, supabase } from '../lib/supabase.js'; // Import supabase main clien
 import { createClient } from '@supabase/supabase-js'; // Import factory for temp client
 import { renderNavbar } from '../components/navigation.js';
 import { showNotification, showLoading, hideLoading, createModal, formatDate } from '../utils/helpers.js';
+import { customReset } from '../utils/custom-reset.js';
 
 let employeesCache = [];
 
@@ -104,7 +105,8 @@ async function loadEmployees() {
         <td>
           <div class="flex gap-xs">
             <button class="btn btn-outline btn-small" onclick="window.editEmployee('${emp.id}')" title="Edit Profil">✏️</button>
-            <button class="btn btn-outline btn-small" onclick="window.resetEmployeePassword('${emp.email}')" title="Reset Password">🔑</button>
+            <button class="btn btn-outline btn-small" onclick="window.resetEmployeePassword('${emp.email}')" title="Reset Password (Email)">📧</button>
+            <button class="btn btn-outline btn-small" onclick="window.customResetPassword('${emp.email}', '${emp.phone}', '${emp.name}')" title="Reset Password (WhatsApp)">📱</button>
             <button class="btn btn-outline btn-small text-danger" onclick="window.deleteEmployee('${emp.id}', '${emp.name}')" title="Hapus Akun">🗑️</button>
           </div>
         </td>
@@ -112,6 +114,74 @@ async function loadEmployees() {
     `).join('');
 
     // Global handlers
+    window.customResetPassword = async (email, phone, name) => {
+      if (!phone) {
+        showNotification('Nomor telepon tidak tersedia untuk karyawan ini', 'warning');
+        return;
+      }
+
+      const proceed = confirm(`🔐 RESET PASSWORD VIA WHATSAPP\n\nKirim kode reset password ke:\n📱 ${phone}\n👤 ${name}\n📧 ${email}\n\nKode akan berlaku selama 30 menit.\n\nLanjutkan?`);
+      
+      if (proceed) {
+        showLoading('Membuat kode reset...');
+        
+        try {
+          const result = await customReset.initiateCustomReset(email, phone, name);
+          
+          hideLoading();
+          
+          if (result.success) {
+            // Show success modal with WhatsApp link
+            const modal = createModal('Reset Password Berhasil', `
+              <div class="text-center">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+                <h3>Kode Reset Dibuat!</h3>
+                <div class="bg-tertiary p-md rounded mb-md">
+                  <div class="text-lg font-bold text-primary">${result.token}</div>
+                  <div class="text-sm text-muted">Kode berlaku sampai ${new Date(result.expiresAt).toLocaleTimeString('id-ID')}</div>
+                </div>
+                
+                <div class="flex flex-col gap-sm">
+                  <a href="${result.whatsappLink}" target="_blank" class="btn btn-primary w-full">
+                    📱 Kirim via WhatsApp
+                  </a>
+                  <button onclick="navigator.clipboard.writeText('${result.smsMessage}')" class="btn btn-outline w-full">
+                    📋 Copy Pesan SMS
+                  </button>
+                  <button onclick="navigator.clipboard.writeText('${result.token}')" class="btn btn-ghost w-full">
+                    🔑 Copy Kode Saja
+                  </button>
+                </div>
+                
+                <div class="mt-md text-sm text-muted">
+                  <p>📝 Instruksi untuk karyawan:</p>
+                  <p>1. Buka aplikasi absensi</p>
+                  <p>2. Klik "Lupa Password?"</p>
+                  <p>3. Masukkan kode reset</p>
+                  <p>4. Buat password baru</p>
+                </div>
+              </div>
+            `, 'Tutup');
+            
+            // Copy to clipboard notification
+            document.addEventListener('click', function(e) {
+              if (e.target.textContent.includes('Copy')) {
+                showNotification('Disalin ke clipboard!', 'success');
+              }
+            });
+            
+          } else {
+            showNotification(`Gagal membuat kode reset: ${result.error}`, 'danger');
+          }
+          
+        } catch (error) {
+          hideLoading();
+          console.error('Custom reset error:', error);
+          showNotification('Terjadi kesalahan sistem', 'danger');
+        }
+      }
+    };
+
     window.resetEmployeePassword = async (email) => {
       const proceed = confirm(`Apakah Anda ingin mengirim email instruksi Reset Password ke ${email}?\n\nCatatan: Pastikan email template sudah dikonfigurasi di Supabase Dashboard.`);
       if (proceed) {

@@ -1,8 +1,9 @@
 import { auth, db } from '../lib/supabase.js';
 import { state } from '../lib/router.js';
 import { router } from '../lib/router.js';
-import { showNotification, showLoading, hideLoading, validate, branding, storage } from '../utils/helpers.js';
+import { showNotification, showLoading, hideLoading, validate, branding, storage, createModal } from '../utils/helpers.js';
 import { versionManager } from '../utils/version.js';
+import { customReset } from '../utils/custom-reset.js';
 
 export function renderLoginPage() {
   const app = document.getElementById('app');
@@ -51,7 +52,10 @@ export function renderLoginPage() {
           </form>
 
           <div class="mt-md text-center">
-            <p style="color: var(--text-muted); font-size: 0.875rem;">
+            <button type="button" id="forgot-password-btn" class="text-primary text-sm" style="background: none; border: none; cursor: pointer; text-decoration: underline;">
+              Lupa Password?
+            </button>
+            <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.5rem;">
               Belum punya akun? Hubungi administrator
             </p>
           </div>
@@ -72,6 +76,12 @@ export function renderLoginPage() {
   const form = document.getElementById('login-form');
   if (form) {
     form.addEventListener('submit', handleLogin);
+  }
+
+  // Attach forgot password event listener
+  const forgotBtn = document.getElementById('forgot-password-btn');
+  if (forgotBtn) {
+    forgotBtn.addEventListener('click', showForgotPasswordModal);
   }
 
   // Load Dynamic Branding (Logo & Name)
@@ -224,5 +234,130 @@ async function handleLogin(e) {
 
     showNotification(msg, 'danger');
     console.error('Login error details:', err);
+  }
+}
+
+// Forgot Password Modal Functions
+function showForgotPasswordModal() {
+  const modal = createModal('Reset Password', `
+    <div class="text-center mb-md">
+      <div style="font-size: 2rem; margin-bottom: 1rem;">🔐</div>
+      <p>Masukkan kode reset password yang dikirim admin via WhatsApp</p>
+    </div>
+    
+    <form id="reset-form">
+      <div class="form-group">
+        <label class="form-label" for="reset-token">Kode Reset (6 karakter)</label>
+        <input type="text" id="reset-token" class="form-input" placeholder="Contoh: ABC123" maxlength="6" style="text-transform: uppercase; text-align: center; font-size: 1.2rem; font-weight: bold;" required />
+        <span class="form-error" id="token-error"></span>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="new-password">Password Baru</label>
+        <input type="password" id="new-password" class="form-input" placeholder="Minimal 6 karakter" required />
+        <span class="form-error" id="password-error"></span>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="confirm-password">Konfirmasi Password</label>
+        <input type="password" id="confirm-password" class="form-input" placeholder="Ulangi password baru" required />
+        <span class="form-error" id="confirm-error"></span>
+      </div>
+      
+      <div class="flex gap-sm mt-lg">
+        <button type="button" class="btn btn-outline flex-1" onclick="this.closest('.modal-overlay').remove()">
+          Batal
+        </button>
+        <button type="submit" class="btn btn-primary flex-1">
+          Reset Password
+        </button>
+      </div>
+    </form>
+    
+    <div class="mt-md text-center text-sm text-muted">
+      <p>💡 Belum dapat kode? Hubungi admin untuk mendapatkan kode reset via WhatsApp</p>
+    </div>
+  `, null, false); // Don't auto-close
+
+  // Auto-format token input
+  const tokenInput = document.getElementById('reset-token');
+  if (tokenInput) {
+    tokenInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+  }
+
+  // Handle form submission
+  const resetForm = document.getElementById('reset-form');
+  if (resetForm) {
+    resetForm.addEventListener('submit', handlePasswordReset);
+  }
+}
+
+async function handlePasswordReset(e) {
+  e.preventDefault();
+
+  const token = document.getElementById('reset-token').value.trim();
+  const newPassword = document.getElementById('new-password').value;
+  const confirmPassword = document.getElementById('confirm-password').value;
+
+  // Clear previous errors
+  document.getElementById('token-error').textContent = '';
+  document.getElementById('password-error').textContent = '';
+  document.getElementById('confirm-error').textContent = '';
+
+  let hasError = false;
+
+  // Validation
+  if (!token || token.length !== 6) {
+    document.getElementById('token-error').textContent = 'Kode reset harus 6 karakter';
+    hasError = true;
+  }
+
+  if (!validate.minLength(newPassword, 6)) {
+    document.getElementById('password-error').textContent = 'Password minimal 6 karakter';
+    hasError = true;
+  }
+
+  if (newPassword !== confirmPassword) {
+    document.getElementById('confirm-error').textContent = 'Konfirmasi password tidak cocok';
+    hasError = true;
+  }
+
+  if (hasError) return;
+
+  // Process reset
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Memproses...';
+
+  try {
+    const result = await customReset.resetPasswordWithToken(token, newPassword);
+
+    if (result.success) {
+      // Close modal
+      document.querySelector('.modal-overlay').remove();
+      
+      showNotification('✅ Password berhasil direset! Silakan login dengan password baru.', 'success');
+      
+      // Clear form
+      document.getElementById('email').value = '';
+      document.getElementById('password').value = '';
+      
+      // Focus on email input
+      setTimeout(() => {
+        document.getElementById('email').focus();
+      }, 500);
+      
+    } else {
+      document.getElementById('token-error').textContent = result.error;
+    }
+
+  } catch (error) {
+    console.error('Reset error:', error);
+    showNotification('Terjadi kesalahan sistem', 'danger');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Reset Password';
   }
 }
