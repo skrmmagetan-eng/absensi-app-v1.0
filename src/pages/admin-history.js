@@ -321,14 +321,14 @@ function showImportVisitsModal() {
             </div>
             <div class="card" style="background: var(--bg-secondary); padding: var(--spacing-sm); margin: var(--spacing-sm) 0;">
               <code style="font-size: 11px; display: block; white-space: pre;">tanggal,nama,lokasi,catatan,foto,petugas,img_foto
-2/5/2025 14:45,Pak Sukadi,-7.668678;111.287454,Cek kandang eks broiler,https://drive.google.com/...,Purwanto,https://drive.google.com/uc?export=view&id=...
-3/5/2025 15:05,Budi,-7.633924;111.289592,Konsultasi kandang koloni,https://drive.google.com/...,Purwanto,https://drive.google.com/uc?export=view&id=...</code>
+2/5/2025 14:45,Pak Sukadi,"-7.668678,111.287454",Cek kandang eks broiler,https://drive.google.com/...,Purwanto,https://drive.google.com/uc?export=view&id=...
+3/5/2025 15:05,Budi,"-7.633924,111.289592",Konsultasi kandang koloni,https://drive.google.com/...,Purwanto,https://drive.google.com/uc?export=view&id=...</code>
             </div>
             <p style="color: var(--text-muted); font-size: 14px;">
               <strong>Catatan:</strong> 
               • Kolom wajib: <code>tanggal</code>, <code>nama</code>, <code>petugas</code><br>
               • Format tanggal: <code>DD/MM/YYYY HH:MM</code><br>
-              • Lokasi: <code>latitude;longitude</code> (opsional)<br>
+              • Lokasi: <code>latitude,longitude</code> atau <code>latitude;longitude</code> (opsional)<br>
               • Petugas harus sudah terdaftar di sistem
             </p>
           </div>
@@ -394,8 +394,8 @@ function showImportVisitsModal() {
 // Download visits CSV template
 function downloadVisitsCSVTemplate() {
     const csvContent = `tanggal,nama,lokasi,catatan,foto,petugas,img_foto
-2/5/2025 14:45,Pak Sukadi,-7.668678;111.287454,Cek kandang eks broiler,https://drive.google.com/file/d/1xoqJCBmDg9O4ca0JCg5wYbybzZB-sKYH/view,Purwanto,https://drive.google.com/uc?export=view&id=1xoqJCBmDg9O4ca0JCg5wYbybzZB-sKYH
-3/5/2025 15:05,Budi,-7.633924;111.289592,Konsultasi kandang koloni DOC,https://drive.google.com/file/d/1DduarB3YaQpVt40FyFjuwUa6lyIn4pM1/view,Purwanto,https://drive.google.com/uc?export=view&id=1DduarB3YaQpVt40FyFjuwUa6lyIn4pM1`;
+2/5/2025 14:45,Pak Sukadi,"-7.668678,111.287454",Cek kandang eks broiler,https://drive.google.com/file/d/1xoqJCBmDg9O4ca0JCg5wYbybzZB-sKYH/view,Purwanto,https://drive.google.com/uc?export=view&id=1xoqJCBmDg9O4ca0JCg5wYbybzZB-sKYH
+3/5/2025 15:05,Budi,"-7.633924,111.289592",Konsultasi kandang koloni DOC,https://drive.google.com/file/d/1DduarB3YaQpVt40FyFjuwUa6lyIn4pM1/view,Purwanto,https://drive.google.com/uc?export=view&id=1DduarB3YaQpVt40FyFjuwUa6lyIn4pM1`;
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -627,8 +627,10 @@ async function createVisitFromCSV(rowData, employeeMap, customerMap) {
         };
         
         // Parse location if available
-        if (rowData.lokasi && rowData.lokasi.includes(';')) {
-            const [lat, lng] = rowData.lokasi.split(';');
+        if (rowData.lokasi && (rowData.lokasi.includes(',') || rowData.lokasi.includes(';'))) {
+            // Handle both comma and semicolon separators
+            const separator = rowData.lokasi.includes(',') ? ',' : ';';
+            const [lat, lng] = rowData.lokasi.split(separator);
             if (!isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
                 newCustomerData.latitude = parseFloat(lat);
                 newCustomerData.longitude = parseFloat(lng);
@@ -653,8 +655,10 @@ async function createVisitFromCSV(rowData, employeeMap, customerMap) {
     };
     
     // Parse location for attendance if available
-    if (rowData.lokasi && rowData.lokasi.includes(';')) {
-        const [lat, lng] = rowData.lokasi.split(';');
+    if (rowData.lokasi && (rowData.lokasi.includes(',') || rowData.lokasi.includes(';'))) {
+        // Handle both comma and semicolon separators
+        const separator = rowData.lokasi.includes(',') ? ',' : ';';
+        const [lat, lng] = rowData.lokasi.split(separator);
         if (!isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
             attendanceData.latitude = parseFloat(lat);
             attendanceData.longitude = parseFloat(lng);

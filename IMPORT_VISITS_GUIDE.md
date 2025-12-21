@@ -17,8 +17,8 @@ ADD COLUMN IF NOT EXISTS longitude float;
 #### Format CSV yang Diperlukan:
 ```csv
 tanggal,nama,lokasi,catatan,foto,petugas,img_foto
-2/5/2025 14:45,Pak Sukadi,-7.668678;111.287454,Cek kandang eks broiler,https://drive.google.com/...,Purwanto,https://drive.google.com/uc?export=view&id=...
-3/5/2025 15:05,Budi,-7.633924;111.289592,Konsultasi kandang koloni,https://drive.google.com/...,Purwanto,https://drive.google.com/uc?export=view&id=...
+2/5/2025 14:45,Pak Sukadi,"-7.668678,111.287454",Cek kandang eks broiler,https://drive.google.com/...,Purwanto,https://drive.google.com/uc?export=view&id=...
+3/5/2025 15:05,Budi,"-7.633924,111.289592",Konsultasi kandang koloni,https://drive.google.com/...,Purwanto,https://drive.google.com/uc?export=view&id=...
 ```
 
 #### Kolom yang Wajib:
@@ -72,9 +72,10 @@ Konversi ke format CSV:
 - Jika jam tidak ada, akan diset ke 12:00
 
 ### Format Koordinat GPS
-- Gunakan titik koma (;) sebagai pemisah
-- Format: latitude;longitude
-- Contoh: -7.668678;111.287454
+- Gunakan koma (,) atau titik koma (;) sebagai pemisah
+- Format: latitude,longitude atau latitude;longitude
+- Contoh: -7.668678,111.287454 atau -7.668678;111.287454
+- Jika menggunakan koma, bungkus dengan tanda kutip: "-7.668678,111.287454"
 
 ### Nama Petugas
 - Harus sesuai persis dengan nama di database karyawan
@@ -101,9 +102,9 @@ Berdasarkan data yang Anda berikan:
 
 ```csv
 tanggal,nama,lokasi,catatan,foto,petugas,img_foto
-2/5/2025 14:45,Pak Sukadi,-7.668678;111.287454,Cek kandang eks broiler,https://drive.google.com/file/d/1xoqJCBmDg9O4ca0JCg5wYbybzZB-sKYH/view,Purwanto,https://drive.google.com/uc?export=view&id=1xoqJCBmDg9O4ca0JCg5wYbybzZB-sKYH
-2/5/2025 19:59,Adul Kodir,-7.639640;111.330534,Test,https://drive.google.com/file/d/12iXoSJB8jyezOXU2XZHsB2zstIJYEcJn/view,Purwanto,https://drive.google.com/uc?export=view&id=12iXoSJB8jyezOXU2XZHsB2zstIJYEcJn
-3/5/2025 15:05,Budi,-7.633924;111.289592,Konsultasi kandang koloni DOC dan Penyakit jamur pada ayam produksi,https://drive.google.com/file/d/1DduarB3YaQpVt40FyFjuwUa6lyIn4pM1/view,Purwanto,https://drive.google.com/uc?export=view&id=1DduarB3YaQpVt40FyFjuwUa6lyIn4pM1
+2/5/2025 14:45,Pak Sukadi,"-7.668678,111.287454",Cek kandang eks broiler,https://drive.google.com/file/d/1xoqJCBmDg9O4ca0JCg5wYbybzZB-sKYH/view,Purwanto,https://drive.google.com/uc?export=view&id=1xoqJCBmDg9O4ca0JCg5wYbybzZB-sKYH
+2/5/2025 19:59,Adul Kodir,"-7.639640,111.330534",Test,https://drive.google.com/file/d/12iXoSJB8jyezOXU2XZHsB2zstIJYEcJn/view,Purwanto,https://drive.google.com/uc?export=view&id=12iXoSJB8jyezOXU2XZHsB2zstIJYEcJn
+3/5/2025 15:05,Budi,"-7.633924,111.289592",Konsultasi kandang koloni DOC dan Penyakit jamur pada ayam produksi,https://drive.google.com/file/d/1DduarB3YaQpVt40FyFjuwUa6lyIn4pM1/view,Purwanto,https://drive.google.com/uc?export=view&id=1DduarB3YaQpVt40FyFjuwUa6lyIn4pM1
 ```
 
 Pastikan nama "Purwanto" sudah terdaftar sebagai karyawan di sistem sebelum import.
