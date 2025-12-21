@@ -18,10 +18,16 @@ export async function renderAdminEmployeesPage() {
             <h1>👥 Manajemen Karyawan</h1>
             <p style="color: var(--text-muted);">Kelola data dan akses karyawan</p>
           </div>
-          <button class="btn btn-primary" id="add-employee-btn">
-            <span>➕</span>
-            <span>Tambah Karyawan</span>
-          </button>
+          <div class="flex gap-sm">
+            <button class="btn btn-outline" id="import-csv-btn">
+              <span>📁</span>
+              <span>Import CSV</span>
+            </button>
+            <button class="btn btn-primary" id="add-employee-btn">
+              <span>➕</span>
+              <span>Tambah Karyawan</span>
+            </button>
+          </div>
         </div>
 
         <!-- Employees List -->
@@ -32,6 +38,7 @@ export async function renderAdminEmployeesPage() {
                 <tr>
                   <th>Nama</th>
                   <th>Email</th>
+                  <th>Lokasi</th>
                   <th>Status</th>
                   <th>Aksi</th>
                 </tr>
@@ -56,6 +63,7 @@ export async function renderAdminEmployeesPage() {
 
   // Event Listener
   document.getElementById('add-employee-btn').addEventListener('click', showAddEmployeeModal);
+  document.getElementById('import-csv-btn').addEventListener('click', showImportCSVModal);
 }
 
 async function loadEmployees() {
@@ -66,7 +74,7 @@ async function loadEmployees() {
     if (error) throw error;
 
     if (!employees || employees.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center p-3">Belum ada karyawan.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center p-3">Belum ada karyawan.</td></tr>';
       return;
     }
 
@@ -75,12 +83,19 @@ async function loadEmployees() {
     tbody.innerHTML = employees.map(emp => `
       <tr>
         <td>
-          <strong>${emp.name}</strong><br>
-          <span class="badge ${emp.role === 'admin' ? 'badge-primary' : (emp.role === 'manager' ? 'badge-warning' : 'badge-outline')} text-xs">
-            ${emp.role.toUpperCase()}
-          </span>
+          <div class="flex items-center gap-sm">
+            ${emp.avatar_url ? `<img src="${emp.avatar_url}" alt="${emp.name}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">` : '👤'}
+            <div>
+              <strong>${emp.name}</strong><br>
+              <span class="badge ${emp.role === 'admin' ? 'badge-primary' : (emp.role === 'manager' ? 'badge-warning' : 'badge-outline')} text-xs">
+                ${emp.role.toUpperCase()}
+              </span>
+              ${emp.notes ? `<br><small style="color: var(--text-muted);">${emp.notes}</small>` : ''}
+            </div>
+          </div>
         </td>
         <td>${emp.email}</td>
+        <td>${emp.location || '-'}</td>
         <td>
           <span class="badge ${emp.status === 'inactive' ? 'badge-danger' : 'badge-success'}">
             ${emp.status === 'inactive' ? 'Nonaktif' : 'Aktif'}
@@ -221,6 +236,18 @@ function showEditEmployeeModal(emp) {
               <small class="text-xs text-muted">Email tidak dapat diubah dari sini.</small>
             </div>
             <div class="form-group">
+              <label class="form-label">Lokasi</label>
+              <input type="text" id="edit-location" class="form-input" value="${emp.location || ''}" placeholder="Contoh: Jakarta">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Catatan</label>
+              <textarea id="edit-notes" class="form-input" rows="2" placeholder="Catatan tambahan">${emp.notes || ''}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">URL Foto Profil</label>
+              <input type="url" id="edit-avatar" class="form-input" value="${emp.avatar_url || ''}" placeholder="https://...">
+            </div>
+            <div class="form-group">
                <label class="form-label">Role / Jabatan</label>
                <select id="edit-role" class="form-input">
                   <option value="employee" ${emp.role === 'employee' ? 'selected' : ''}>Employee (Sales/Field)</option>
@@ -252,6 +279,9 @@ function showEditEmployeeModal(emp) {
 
   overlay.querySelector('#btn-edit-save').onclick = async () => {
     const newName = document.getElementById('edit-name').value;
+    const newLocation = document.getElementById('edit-location').value;
+    const newNotes = document.getElementById('edit-notes').value;
+    const newAvatar = document.getElementById('edit-avatar').value;
     const newRole = document.getElementById('edit-role').value;
     const newStatus = document.getElementById('edit-status').value;
 
@@ -261,14 +291,21 @@ function showEditEmployeeModal(emp) {
     }
 
     close();
-    await handleEditEmployee(emp.id, newName, newRole, newStatus);
+    await handleEditEmployee(emp.id, {
+      name: newName,
+      location: newLocation,
+      notes: newNotes,
+      avatar_url: newAvatar,
+      role: newRole,
+      status: newStatus
+    });
   };
 }
 
-async function handleEditEmployee(id, name, role, status) {
+async function handleEditEmployee(id, updates) {
   showLoading('Menyimpan perubahan...');
   try {
-    const { error } = await db.updateUserProfile(id, { name, role, status });
+    const { error } = await db.updateUserProfile(id, updates);
     if (error) throw error;
 
     hideLoading();
@@ -338,5 +375,329 @@ async function handleAddEmployee(name, email, password, role) {
     hideLoading();
     console.error('Add Employee Error:', error);
     showNotification('Gagal: ' + error.message, 'danger');
+  }
+}
+
+// Import CSV Modal
+function showImportCSVModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="modal-title">📁 Import Data Karyawan dari CSV</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-md">
+          <div class="flex justify-between items-center mb-sm">
+            <h4>Format CSV yang Diperlukan:</h4>
+            <button class="btn btn-outline btn-small" id="download-template-btn">
+              <span>⬇️</span>
+              <span>Download Template</span>
+            </button>
+          </div>
+          <div class="card" style="background: var(--bg-secondary); padding: var(--spacing-sm); margin: var(--spacing-sm) 0;">
+            <code style="font-size: 12px; display: block; white-space: pre;">nama,email,lokasi,catatan,foto,penjualan,link_foto
+Adi Saputra,adi@example.com,Jakarta,Sales terbaik,foto1.jpg,5000000,https://...
+Budi Santoso,budi@example.com,Bandung,Manager area,foto2.jpg,3000000,https://...</code>
+          </div>
+          <p style="color: var(--text-muted); font-size: 14px;">
+            <strong>Catatan:</strong> Kolom yang wajib ada: <code>nama</code> dan <code>email</code>. 
+            Password default akan diset ke <code>123456</code> untuk semua karyawan.
+          </p>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Pilih File CSV</label>
+          <input type="file" id="csv-file-input" class="form-input" accept=".csv" required>
+        </div>
+        
+        <div id="csv-preview" style="display: none;">
+          <h4>Preview Data (5 baris pertama):</h4>
+          <div class="table-container" style="max-height: 200px; overflow-y: auto;">
+            <table class="table" id="preview-table">
+              <thead id="preview-header"></thead>
+              <tbody id="preview-body"></tbody>
+            </table>
+          </div>
+          <p id="total-rows" style="color: var(--text-muted); margin-top: var(--spacing-sm);"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-import-cancel">Batal</button>
+        <button class="btn btn-primary" id="btn-import-process" disabled>Import Data</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // Event Handlers
+  const close = () => { document.body.removeChild(overlay); };
+  
+  overlay.querySelector('.modal-close').onclick = close;
+  overlay.querySelector('#btn-import-cancel').onclick = close;
+  
+  // Download template handler
+  overlay.querySelector('#download-template-btn').onclick = () => {
+    downloadCSVTemplate();
+  };
+  
+  // File input handler
+  const fileInput = overlay.querySelector('#csv-file-input');
+  const processBtn = overlay.querySelector('#btn-import-process');
+  
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      await previewCSV(file);
+      processBtn.disabled = false;
+    }
+  });
+  
+  // Process import
+  processBtn.onclick = async () => {
+    const file = fileInput.files[0];
+    if (file) {
+      close();
+      await processCSVImport(file);
+    }
+  };
+}
+
+// Preview CSV content
+async function previewCSV(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const csv = e.target.result;
+      const lines = csv.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        showNotification('File CSV harus memiliki minimal header dan 1 baris data', 'warning');
+        return;
+      }
+      
+      // Parse header
+      const headers = parseCSVLine(lines[0]);
+      
+      // Parse preview data (first 5 rows)
+      const previewData = lines.slice(1, 6).map(line => parseCSVLine(line));
+      
+      // Show preview
+      const previewDiv = document.getElementById('csv-preview');
+      const headerElement = document.getElementById('preview-header');
+      const bodyElement = document.getElementById('preview-body');
+      const totalRowsElement = document.getElementById('total-rows');
+      
+      // Build header
+      headerElement.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+      
+      // Build body
+      bodyElement.innerHTML = previewData.map(row => 
+        `<tr>${row.map(cell => `<td>${cell || '-'}</td>`).join('')}</tr>`
+      ).join('');
+      
+      totalRowsElement.textContent = `Total: ${lines.length - 1} baris data`;
+      previewDiv.style.display = 'block';
+      
+      resolve();
+    };
+    reader.readAsText(file);
+  });
+}
+
+// Parse CSV line (simple parser)
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  result.push(current.trim());
+  return result;
+}
+
+// Process CSV import
+async function processCSVImport(file) {
+  showLoading('Memproses import CSV...');
+  
+  try {
+    const csv = await readFileAsText(file);
+    const lines = csv.split('\n').filter(line => line.trim());
+    
+    if (lines.length < 2) {
+      throw new Error('File CSV tidak valid');
+    }
+    
+    // Parse header and data
+    const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+    const dataRows = lines.slice(1).map(line => parseCSVLine(line));
+    
+    // Validate required columns
+    const requiredColumns = ['nama', 'email'];
+    const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+    
+    if (missingColumns.length > 0) {
+      throw new Error(`Kolom wajib tidak ditemukan: ${missingColumns.join(', ')}`);
+    }
+    
+    // Process each row
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+    
+    for (let i = 0; i < dataRows.length; i++) {
+      const row = dataRows[i];
+      const rowData = {};
+      
+      // Map row data to object
+      headers.forEach((header, index) => {
+        rowData[header] = row[index] || '';
+      });
+      
+      // Skip empty rows
+      if (!rowData.nama || !rowData.email) {
+        continue;
+      }
+      
+      try {
+        await createEmployeeFromCSV(rowData);
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        errors.push(`Baris ${i + 2}: ${error.message}`);
+      }
+    }
+    
+    hideLoading();
+    
+    // Show results
+    let message = `Import selesai: ${successCount} berhasil`;
+    if (errorCount > 0) {
+      message += `, ${errorCount} gagal`;
+    }
+    
+    showNotification(message, errorCount > 0 ? 'warning' : 'success');
+    
+    if (errors.length > 0 && errors.length <= 5) {
+      console.log('Import errors:', errors);
+      setTimeout(() => {
+        alert('Beberapa data gagal diimport:\n\n' + errors.join('\n'));
+      }, 1000);
+    }
+    
+    // Reload employees list
+    loadEmployees();
+    
+  } catch (error) {
+    hideLoading();
+    showNotification('Gagal import: ' + error.message, 'danger');
+  }
+}
+
+// Create employee from CSV data
+async function createEmployeeFromCSV(rowData) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  
+  // Create temp client
+  const tempClient = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
+    }
+  });
+  
+  // Default password
+  const defaultPassword = '123456';
+  
+  // Create auth user
+  const { data: authData, error: authError } = await tempClient.auth.signUp({
+    email: rowData.email,
+    password: defaultPassword,
+  });
+  
+  if (authError) {
+    throw new Error(`Auth error: ${authError.message}`);
+  }
+  
+  if (!authData.user) {
+    throw new Error('Gagal membuat user auth');
+  }
+  
+  // Create profile
+  const profileData = {
+    id: authData.user.id,
+    email: rowData.email,
+    name: rowData.nama,
+    role: 'employee', // Default role
+    status: 'active',
+    created_at: new Date().toISOString()
+  };
+  
+  // Add optional fields if available
+  if (rowData.lokasi) profileData.location = rowData.lokasi;
+  if (rowData.catatan) profileData.notes = rowData.catatan;
+  if (rowData.link_foto) profileData.avatar_url = rowData.link_foto;
+  if (rowData.penjualan) {
+    // Convert penjualan to number, remove any non-numeric characters except dots
+    const salesAmount = parseFloat(rowData.penjualan.toString().replace(/[^\d.]/g, ''));
+    if (!isNaN(salesAmount)) {
+      profileData.sales_amount = salesAmount;
+    }
+  }
+  
+  const { error: dbError } = await supabase
+    .from('users')
+    .upsert(profileData);
+  
+  if (dbError) {
+    throw new Error(`Database error: ${dbError.message}`);
+  }
+}
+
+// Helper function to read file as text
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (e) => reject(e);
+    reader.readAsText(file);
+  });
+}
+
+// Download CSV template
+function downloadCSVTemplate() {
+  const csvContent = `nama,email,lokasi,catatan,foto,penjualan,link_foto
+Adi Saputra,adi@example.com,Jakarta,Sales terbaik,foto1.jpg,5000000,https://drive.google.com/file/d/1234/view
+Budi Santoso,budi@example.com,Bandung,Manager area,foto2.jpg,3000000,https://drive.google.com/file/d/5678/view
+Citra Dewi,citra@example.com,Surabaya,Karyawan baru,foto3.jpg,1500000,https://drive.google.com/file/d/9012/view`;
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'template_karyawan.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 }
