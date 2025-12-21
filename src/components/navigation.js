@@ -2,7 +2,7 @@ import { auth, db } from '../lib/supabase.js';
 import { state } from '../lib/router.js';
 import { router } from '../lib/router.js';
 import { themeManager } from '../utils/theme.js';
-import { showNotification, showLoading, hideLoading, geo, branding } from '../utils/helpers.js';
+import { showNotification, showLoading, hideLoading, geo, branding, storage } from '../utils/helpers.js';
 import { versionManager } from '../utils/version.js';
 
 export function renderNavbar() {
@@ -90,9 +90,17 @@ export function renderNavbar() {
             <button class="btn btn-outline w-full justify-start" id="sidebar-theme-btn">
                ${currentThemeIcon} Ganti Tema
             </button>
+            <button class="btn btn-outline w-full justify-start" id="sidebar-about-btn">
+               ℹ️ Tentang Aplikasi
+            </button>
             <button class="btn btn-danger w-full justify-start" id="sidebar-logout-btn">
                🚪 Logout
             </button>
+            
+            <!-- Version Info in Sidebar -->
+            <div style="text-align: center; padding: 0.5rem; font-size: 0.7rem; color: var(--text-muted); opacity: 0.7; border-top: 1px solid var(--border-color); margin-top: 0.5rem;">
+              Absensi App v${versionManager.getCurrentVersion()}
+            </div>
          </div>
       </div>
     </div>
@@ -281,6 +289,24 @@ export function setupNavigationEvents() {
       } else if (newPwd) {
         showNotification('Password minimal 6 karakter', 'warning');
       }
+    });
+  }
+
+  // About App Button
+  const aboutBtn = document.getElementById('sidebar-about-btn');
+  if (aboutBtn) {
+    aboutBtn.addEventListener('click', () => {
+      const profile = state.getState('profile');
+      const brand = branding.getLocal();
+      
+      alert(`📱 ${brand.name || 'SKRM Absensi'}\n\n` +
+            `🔢 Versi: ${versionManager.getCurrentVersion()}\n` +
+            `👤 User: ${profile?.name || 'Unknown'}\n` +
+            `🏷️ Role: ${profile?.role || 'employee'}\n` +
+            `📧 Email: ${profile?.email || 'Unknown'}\n\n` +
+            `📅 Build: ${new Date().getFullYear()}\n` +
+            `🏢 SKRM Management System\n\n` +
+            `"Transforming attendance data into workforce intelligence."`);
     });
   }
 }

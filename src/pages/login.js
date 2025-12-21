@@ -64,6 +64,9 @@ export function renderLoginPage() {
             <p style="font-size: 0.75rem; margin: 0; color: var(--text-secondary); font-style: italic;">
               "Transforming attendance data into workforce intelligence."
             </p>
+            <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; opacity: 0.8;">
+              v${versionManager.getCurrentVersion()}
+            </div>
           </div>
         </div>
         
