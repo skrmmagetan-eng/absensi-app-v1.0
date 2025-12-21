@@ -1,6 +1,8 @@
 import { auth, db } from './lib/supabase.js';
 import { router, state } from './lib/router.js';
 import { themeManager } from './utils/theme.js';
+import { versionManager } from './utils/version.js';
+import { authChecker } from './utils/auth-check.js';
 
 // Initialize Theme
 themeManager.init();
@@ -397,6 +399,9 @@ async function handleRouting() {
 // Initialization
 async function init() {
   try {
+    // Check for app updates
+    versionManager.showUpdateNotification();
+    
     // Check auth status only if app wasn't closed
     if (!securityManager.shouldRequireLogin()) {
       const user = await auth.getUser();
@@ -421,6 +426,9 @@ async function init() {
         securityManager.startSession();
       }
     }
+
+    // Setup auth listener for real-time changes
+    authChecker.setupAuthListener();
 
     // Start router
     window.addEventListener('hashchange', handleRouting);

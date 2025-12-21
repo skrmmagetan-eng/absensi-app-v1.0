@@ -2,6 +2,7 @@ import { auth, db } from '../lib/supabase.js';
 import { state } from '../lib/router.js';
 import { router } from '../lib/router.js';
 import { showNotification, showLoading, hideLoading, validate, branding, storage } from '../utils/helpers.js';
+import { versionManager } from '../utils/version.js';
 
 export function renderLoginPage() {
   const app = document.getElementById('app');
@@ -61,6 +62,8 @@ export function renderLoginPage() {
             </p>
           </div>
         </div>
+        
+        ${versionManager.renderVersionFooter()}
       </div>
     </div>
   `;

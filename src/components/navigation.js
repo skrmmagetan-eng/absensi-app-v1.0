@@ -3,6 +3,7 @@ import { state } from '../lib/router.js';
 import { router } from '../lib/router.js';
 import { themeManager } from '../utils/theme.js';
 import { showNotification, showLoading, hideLoading, geo, branding } from '../utils/helpers.js';
+import { versionManager } from '../utils/version.js';
 
 export function renderNavbar() {
   const user = state.getState('user');
@@ -99,7 +100,11 @@ export function renderNavbar() {
 }
 
 export function renderBottomNav() {
-  return ''; // Bottom nav disabled/replaced by sidebar
+  return `
+    <div style="margin-top: auto;">
+      ${versionManager.renderVersionFooter()}
+    </div>
+  `;
 }
 
 function getEmployeeLinks() {
