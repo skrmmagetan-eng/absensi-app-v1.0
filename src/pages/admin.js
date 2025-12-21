@@ -359,7 +359,7 @@ function renderLatestVisits(visits) {
           <div class="visit-main-row">
             <div class="visit-left-section">
               <div class="visit-customer-name">${v.customers?.name || 'Unknown'}</div>
-              <div class="visit-customer-address">oleh ${v.users?.name || 'User'}</div>
+              <div class="visit-customer-address">${v.customers?.address || '-'}</div>
             </div>
             <div class="visit-right-section">
               <span class="visit-status-badge ${v.check_out_time ? 'status-completed' : 'status-ongoing'}">
@@ -383,8 +383,14 @@ function renderLatestVisits(visits) {
               </div>
             </div>
 
-            ${v.notes || v.photo_url ? `
+            ${v.notes || v.photo_url || v.users?.name ? `
               <div class="visit-additional-info">
+                ${v.users?.name ? `
+                  <div class="visit-staff-info">
+                    <div class="staff-label">👤 Staff yang melakukan kunjungan:</div>
+                    <div class="staff-name">${v.users.name}</div>
+                  </div>
+                ` : ''}
                 ${v.notes ? `
                   <div class="visit-notes">
                     <div class="notes-label">📝 Catatan Kunjungan:</div>
@@ -407,8 +413,8 @@ function renderLatestVisits(visits) {
     
     <style>
       .visit-card-expandable {
-        background: white;
-        border: 1px solid #e5e7eb;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.3s ease;
@@ -417,7 +423,7 @@ function renderLatestVisits(visits) {
       
       .visit-card-expandable:hover {
         border-color: var(--primary);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: var(--shadow-md);
       }
       
       .visit-main-row {
@@ -429,7 +435,7 @@ function renderLatestVisits(visits) {
       }
       
       .visit-card-expandable.active .visit-main-row {
-        border-bottom-color: #e5e7eb;
+        border-bottom-color: var(--border-color);
       }
       
       .visit-left-section {
@@ -445,7 +451,7 @@ function renderLatestVisits(visits) {
       
       .visit-customer-address {
         font-size: 14px;
-        color: #6b7280;
+        color: var(--text-muted);
       }
       
       .visit-right-section {
@@ -463,19 +469,19 @@ function renderLatestVisits(visits) {
       }
       
       .status-completed {
-        background: #dcfce7;
-        color: #166534;
+        background: var(--success-light);
+        color: var(--success-dark);
       }
       
       .status-ongoing {
-        background: #fef3c7;
-        color: #92400e;
+        background: var(--warning-light);
+        color: var(--warning-dark);
       }
       
       .visit-date {
         font-size: 13px;
         font-weight: 600;
-        color: #374151;
+        color: var(--text-primary);
       }
       
       .visit-expand-content {
@@ -490,7 +496,7 @@ function renderLatestVisits(visits) {
       
       .visit-detail-separator {
         height: 1px;
-        background: #e5e7eb;
+        background: var(--border-color);
         margin-bottom: 16px;
       }
       
@@ -502,14 +508,14 @@ function renderLatestVisits(visits) {
       }
       
       .time-item {
-        background: #f9fafb;
+        background: var(--bg-tertiary);
         padding: 12px;
         border-radius: 6px;
       }
       
       .time-label {
         font-size: 11px;
-        color: #6b7280;
+        color: var(--text-muted);
         font-weight: 500;
         margin-bottom: 4px;
       }
@@ -517,12 +523,31 @@ function renderLatestVisits(visits) {
       .time-value {
         font-size: 14px;
         font-weight: 600;
-        color: #111827;
+        color: var(--text-primary);
       }
       
       .visit-additional-info {
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid var(--border-color);
         padding-top: 16px;
+      }
+      
+      .visit-staff-info {
+        margin-bottom: 12px;
+        padding: 10px;
+        background: var(--bg-tertiary);
+        border-radius: 6px;
+      }
+      
+      .staff-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+      }
+      
+      .staff-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary);
       }
       
       .visit-notes {
@@ -531,16 +556,16 @@ function renderLatestVisits(visits) {
       
       .notes-label {
         font-size: 12px;
-        color: #6b7280;
+        color: var(--text-muted);
         margin-bottom: 6px;
       }
       
       .notes-content {
-        background: #f3f4f6;
+        background: var(--bg-secondary);
         padding: 10px;
         border-radius: 6px;
         font-size: 14px;
-        color: #374151;
+        color: var(--text-secondary);
         font-style: italic;
       }
       
@@ -553,13 +578,13 @@ function renderLatestVisits(visits) {
         font-size: 14px;
         font-weight: 500;
         padding: 8px 12px;
-        background: #eff6ff;
+        background: var(--primary-light);
         border-radius: 6px;
         transition: background 0.2s;
       }
       
       .photo-link:hover {
-        background: #dbeafe;
+        background: var(--primary-lighter);
       }
       
       @keyframes slideDown {
