@@ -53,16 +53,12 @@ FROM ranked_users
 ORDER BY email, rn;
 
 -- Step 3: Check if any customers are linked to duplicate users
-SELECT 
-    u.email,
-    u.id as user_id,
-    u.name as user_name,
-    COUNT(c.id) as customer_count
-FROM public.users u
-LEFT JOIN public.customers c ON u.id = c.employee_id
-WHERE u.id NOT IN (
-    SELECT MIN(id) 
-    FROM public.users 
+WITH users_to_keep AS (
+    SELECT 
+        id,
+        email,
+        ROW_NUMBER() OVER (PARTITION BY email ORDER BY created_at ASC) as rn
+    FROM public.users
     WHERE email IN (
         'wicaksonopurwanto@gmail.com',
         'anggaskharisma@gmail.com',
@@ -72,7 +68,16 @@ WHERE u.id NOT IN (
         'manager@skrm.com',
         'skrmmagetan@gmail.com'
     )
-    GROUP BY email
+)
+SELECT 
+    u.email,
+    u.id as user_id,
+    u.name as user_name,
+    COUNT(c.id) as customer_count
+FROM public.users u
+LEFT JOIN public.customers c ON u.id = c.employee_id
+WHERE u.id NOT IN (
+    SELECT id FROM users_to_keep WHERE rn = 1
 )
 AND u.email IN (
     'wicaksonopurwanto@gmail.com',
@@ -88,11 +93,25 @@ GROUP BY u.email, u.id, u.name;
 -- Step 4: Delete duplicate users (keeps oldest for each email)
 -- IMPORTANT: This will delete duplicate users permanently!
 
+WITH users_to_keep AS (
+    SELECT 
+        id,
+        email,
+        ROW_NUMBER() OVER (PARTITION BY email ORDER BY created_at ASC) as rn
+    FROM public.users
+    WHERE email IN (
+        'wicaksonopurwanto@gmail.com',
+        'anggaskharisma@gmail.com',
+        'mazis977@gmail.com',
+        'achmadverry20@gmail.com',
+        'dwikydiaspriambodo@gmail.com',
+        'manager@skrm.com',
+        'skrmmagetan@gmail.com'
+    )
+)
 DELETE FROM public.users 
 WHERE id NOT IN (
-    SELECT MIN(id) 
-    FROM public.users 
-    GROUP BY email
+    SELECT id FROM users_to_keep WHERE rn = 1
 )
 AND email IN (
     'wicaksonopurwanto@gmail.com',

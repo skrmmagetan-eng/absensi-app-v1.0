@@ -54,11 +54,16 @@ ORDER BY u1.email;
 -- IMPORTANT: This will permanently delete duplicate users!
 -- Make sure to backup your data first if needed
 
+WITH users_to_keep AS (
+    SELECT 
+        id,
+        email,
+        ROW_NUMBER() OVER (PARTITION BY email ORDER BY created_at ASC) as rn
+    FROM public.users
+)
 DELETE FROM public.users 
 WHERE id NOT IN (
-    SELECT MIN(id) 
-    FROM public.users 
-    GROUP BY email
+    SELECT id FROM users_to_keep WHERE rn = 1
 );
 
 -- Step 5: Verify no more duplicates exist
