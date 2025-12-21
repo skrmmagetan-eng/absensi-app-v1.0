@@ -3,6 +3,10 @@ import { router, state } from './lib/router.js';
 import { themeManager } from './utils/theme.js';
 import { versionManager } from './utils/version.js';
 import { authChecker } from './utils/auth-check.js';
+import { initializeSpeedInsights } from './utils/speed-insights.js';
+
+// Initialize Speed Insights for performance monitoring
+initializeSpeedInsights();
 
 // Initialize Theme
 themeManager.init();
