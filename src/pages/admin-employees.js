@@ -20,9 +20,9 @@ export async function renderAdminEmployeesPage() {
             <p style="color: var(--text-muted);">Kelola data dan akses karyawan</p>
           </div>
           <div class="flex gap-sm">
-            <button class="btn btn-outline" id="import-csv-btn">
-              <span>📁</span>
-              <span>Import CSV</span>
+            <button class="btn btn-outline" id="export-report-btn">
+              <span>📊</span>
+              <span>Export Laporan</span>
             </button>
             <button class="btn btn-primary" id="add-employee-btn">
               <span>➕</span>
@@ -64,7 +64,7 @@ export async function renderAdminEmployeesPage() {
 
   // Event Listener
   document.getElementById('add-employee-btn').addEventListener('click', showAddEmployeeModal);
-  document.getElementById('import-csv-btn').addEventListener('click', showImportCSVModal);
+  document.getElementById('export-report-btn').addEventListener('click', exportEmployeeReport);
 }
 
 async function loadEmployees() {
@@ -477,326 +477,116 @@ async function handleAddEmployee(name, email, password, role) {
   }
 }
 
-// Import CSV Modal
-function showImportCSVModal() {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.innerHTML = `
-    <div class="modal" style="max-width: 600px;">
-      <div class="modal-header">
-        <h3 class="modal-title">📁 Import Data Karyawan dari CSV</h3>
-        <button class="modal-close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-md">
-          <div class="flex justify-between items-center mb-sm">
-            <h4>Format CSV yang Diperlukan:</h4>
-            <button class="btn btn-outline btn-small" id="download-template-btn">
-              <span>⬇️</span>
-              <span>Download Template</span>
-            </button>
-          </div>
-          <div class="card" style="background: var(--bg-secondary); padding: var(--spacing-sm); margin: var(--spacing-sm) 0;">
-            <code style="font-size: 12px; display: block; white-space: pre;">nama,email,lokasi,catatan,foto,penjualan,link_foto
-Adi Saputra,adi@example.com,Jakarta,Sales terbaik,foto1.jpg,5000000,https://...
-Budi Santoso,budi@example.com,Bandung,Manager area,foto2.jpg,3000000,https://...</code>
-          </div>
-          <p style="color: var(--text-muted); font-size: 14px;">
-            <strong>Catatan:</strong> Kolom yang wajib ada: <code>nama</code> dan <code>email</code>. 
-            Password default akan diset ke <code>123456</code> untuk semua karyawan.
-          </p>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">Pilih File CSV</label>
-          <input type="file" id="csv-file-input" class="form-input" accept=".csv" required>
-        </div>
-        
-        <div id="csv-preview" style="display: none;">
-          <h4>Preview Data (5 baris pertama):</h4>
-          <div class="table-container" style="max-height: 200px; overflow-y: auto;">
-            <table class="table" id="preview-table">
-              <thead id="preview-header"></thead>
-              <tbody id="preview-body"></tbody>
-            </table>
-          </div>
-          <p id="total-rows" style="color: var(--text-muted); margin-top: var(--spacing-sm);"></p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" id="btn-import-cancel">Batal</button>
-        <button class="btn btn-primary" id="btn-import-process" disabled>Import Data</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(overlay);
-
-  // Event Handlers
-  const close = () => { document.body.removeChild(overlay); };
-  
-  overlay.querySelector('.modal-close').onclick = close;
-  overlay.querySelector('#btn-import-cancel').onclick = close;
-  
-  // Download template handler
-  overlay.querySelector('#download-template-btn').onclick = () => {
-    downloadCSVTemplate();
-  };
-  
-  // File input handler
-  const fileInput = overlay.querySelector('#csv-file-input');
-  const processBtn = overlay.querySelector('#btn-import-process');
-  
-  fileInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      await previewCSV(file);
-      processBtn.disabled = false;
-    }
-  });
-  
-  // Process import
-  processBtn.onclick = async () => {
-    const file = fileInput.files[0];
-    if (file) {
-      close();
-      await processCSVImport(file);
-    }
-  };
-}
-
-// Preview CSV content
-async function previewCSV(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const csv = e.target.result;
-      const lines = csv.split('\n').filter(line => line.trim());
-      
-      if (lines.length < 2) {
-        showNotification('File CSV harus memiliki minimal header dan 1 baris data', 'warning');
-        return;
-      }
-      
-      // Parse header
-      const headers = parseCSVLine(lines[0]);
-      
-      // Parse preview data (first 5 rows)
-      const previewData = lines.slice(1, 6).map(line => parseCSVLine(line));
-      
-      // Show preview
-      const previewDiv = document.getElementById('csv-preview');
-      const headerElement = document.getElementById('preview-header');
-      const bodyElement = document.getElementById('preview-body');
-      const totalRowsElement = document.getElementById('total-rows');
-      
-      // Build header
-      headerElement.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
-      
-      // Build body
-      bodyElement.innerHTML = previewData.map(row => 
-        `<tr>${row.map(cell => `<td>${cell || '-'}</td>`).join('')}</tr>`
-      ).join('');
-      
-      totalRowsElement.textContent = `Total: ${lines.length - 1} baris data`;
-      previewDiv.style.display = 'block';
-      
-      resolve();
-    };
-    reader.readAsText(file);
-  });
-}
-
-// Parse CSV line (simple parser)
-function parseCSVLine(line) {
-  const result = [];
-  let current = '';
-  let inQuotes = false;
-  
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    
-    if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
-      result.push(current.trim());
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  
-  result.push(current.trim());
-  return result;
-}
-
-// Process CSV import
-async function processCSVImport(file) {
-  showLoading('Memproses import CSV...');
-  
+// Export Employee Report
+async function exportEmployeeReport() {
   try {
-    const csv = await readFileAsText(file);
-    const lines = csv.split('\n').filter(line => line.trim());
+    showLoading('Menyiapkan laporan...');
     
-    if (lines.length < 2) {
-      throw new Error('File CSV tidak valid');
+    // Get all employees data
+    const employees = await loadEmployees();
+    
+    if (!employees || employees.length === 0) {
+      hideLoading();
+      showNotification('Tidak ada data karyawan untuk diekspor', 'warning');
+      return;
     }
-    
-    // Parse header and data
-    const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
-    const dataRows = lines.slice(1).map(line => parseCSVLine(line));
-    
-    // Validate required columns
-    const requiredColumns = ['nama', 'email'];
-    const missingColumns = requiredColumns.filter(col => !headers.includes(col));
-    
-    if (missingColumns.length > 0) {
-      throw new Error(`Kolom wajib tidak ditemukan: ${missingColumns.join(', ')}`);
-    }
-    
-    // Process each row
-    let successCount = 0;
-    let errorCount = 0;
-    const errors = [];
-    
-    for (let i = 0; i < dataRows.length; i++) {
-      const row = dataRows[i];
-      const rowData = {};
-      
-      // Map row data to object
-      headers.forEach((header, index) => {
-        rowData[header] = row[index] || '';
-      });
-      
-      // Skip empty rows
-      if (!rowData.nama || !rowData.email) {
-        continue;
-      }
-      
+
+    // Prepare CSV data
+    const headers = [
+      'Nama',
+      'Email', 
+      'Lokasi',
+      'Role',
+      'Status',
+      'Tanggal Bergabung',
+      'Nomor Telepon',
+      'Total Kunjungan',
+      'Kunjungan Bulan Ini'
+    ];
+
+    // Get additional data for each employee
+    const enrichedData = await Promise.all(employees.map(async (emp) => {
       try {
-        await createEmployeeFromCSV(rowData);
-        successCount++;
+        // Get visit statistics
+        const { data: totalVisits } = await db.supabase
+          .from('attendance')
+          .select('id')
+          .eq('user_id', emp.id);
+
+        const { data: monthlyVisits } = await db.supabase
+          .from('attendance')
+          .select('id')
+          .eq('user_id', emp.id)
+          .gte('check_in_time', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString());
+
+        return {
+          nama: emp.name || '-',
+          email: emp.email || '-',
+          lokasi: emp.location || '-',
+          role: emp.role || 'employee',
+          status: emp.status === 'inactive' ? 'Nonaktif' : 'Aktif',
+          tanggal_bergabung: emp.created_at ? formatDate(emp.created_at) : '-',
+          nomor_telepon: emp.phone || '-',
+          total_kunjungan: totalVisits?.length || 0,
+          kunjungan_bulan_ini: monthlyVisits?.length || 0
+        };
       } catch (error) {
-        errorCount++;
-        errors.push(`Baris ${i + 2}: ${error.message}`);
+        console.error('Error enriching employee data:', error);
+        return {
+          nama: emp.name || '-',
+          email: emp.email || '-',
+          lokasi: emp.location || '-',
+          role: emp.role || 'employee',
+          status: emp.status === 'inactive' ? 'Nonaktif' : 'Aktif',
+          tanggal_bergabung: emp.created_at ? formatDate(emp.created_at) : '-',
+          nomor_telepon: emp.phone || '-',
+          total_kunjungan: 0,
+          kunjungan_bulan_ini: 0
+        };
       }
-    }
+    }));
+
+    // Convert to CSV
+    const csvContent = [
+      headers.join(','),
+      ...enrichedData.map(row => [
+        `"${row.nama}"`,
+        `"${row.email}"`,
+        `"${row.lokasi}"`,
+        `"${row.role}"`,
+        `"${row.status}"`,
+        `"${row.tanggal_bergabung}"`,
+        `"${row.nomor_telepon}"`,
+        row.total_kunjungan,
+        row.kunjungan_bulan_ini
+      ].join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
     
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      
+      // Generate filename with current date
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+      link.setAttribute('download', `laporan-karyawan-${dateStr}.csv`);
+      
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
     hideLoading();
-    
-    // Show results
-    let message = `Import selesai: ${successCount} berhasil`;
-    if (errorCount > 0) {
-      message += `, ${errorCount} gagal`;
-    }
-    
-    showNotification(message, errorCount > 0 ? 'warning' : 'success');
-    
-    if (errors.length > 0 && errors.length <= 5) {
-      console.log('Import errors:', errors);
-      setTimeout(() => {
-        alert('Beberapa data gagal diimport:\n\n' + errors.join('\n'));
-      }, 1000);
-    }
-    
-    // Reload employees list
-    loadEmployees();
-    
+    showNotification(`✅ Laporan berhasil diekspor (${enrichedData.length} karyawan)`, 'success');
+
   } catch (error) {
     hideLoading();
-    showNotification('Gagal import: ' + error.message, 'danger');
-  }
-}
-
-// Create employee from CSV data
-async function createEmployeeFromCSV(rowData) {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  
-  // Create temp client
-  const tempClient = createClient(supabaseUrl, supabaseKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false
-    }
-  });
-  
-  // Default password
-  const defaultPassword = '123456';
-  
-  // Create auth user
-  const { data: authData, error: authError } = await tempClient.auth.signUp({
-    email: rowData.email,
-    password: defaultPassword,
-  });
-  
-  if (authError) {
-    throw new Error(`Auth error: ${authError.message}`);
-  }
-  
-  if (!authData.user) {
-    throw new Error('Gagal membuat user auth');
-  }
-  
-  // Create profile
-  const profileData = {
-    id: authData.user.id,
-    email: rowData.email,
-    name: rowData.nama,
-    role: 'employee', // Default role
-    status: 'active',
-    created_at: new Date().toISOString()
-  };
-  
-  // Add optional fields if available
-  if (rowData.lokasi) profileData.location = rowData.lokasi;
-  if (rowData.catatan) profileData.notes = rowData.catatan;
-  if (rowData.link_foto) profileData.avatar_url = rowData.link_foto;
-  if (rowData.penjualan) {
-    // Convert penjualan to number, remove any non-numeric characters except dots
-    const salesAmount = parseFloat(rowData.penjualan.toString().replace(/[^\d.]/g, ''));
-    if (!isNaN(salesAmount)) {
-      profileData.sales_amount = salesAmount;
-    }
-  }
-  
-  const { error: dbError } = await supabase
-    .from('users')
-    .upsert(profileData);
-  
-  if (dbError) {
-    throw new Error(`Database error: ${dbError.message}`);
-  }
-}
-
-// Helper function to read file as text
-function readFileAsText(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);
-    reader.onerror = (e) => reject(e);
-    reader.readAsText(file);
-  });
-}
-
-// Download CSV template
-function downloadCSVTemplate() {
-  const csvContent = `nama,email,lokasi,catatan,foto,penjualan,link_foto
-Adi Saputra,adi@example.com,Jakarta,Sales terbaik,foto1.jpg,5000000,https://drive.google.com/file/d/1234/view
-Budi Santoso,budi@example.com,Bandung,Manager area,foto2.jpg,3000000,https://drive.google.com/file/d/5678/view
-Citra Dewi,citra@example.com,Surabaya,Karyawan baru,foto3.jpg,1500000,https://drive.google.com/file/d/9012/view`;
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  
-  if (link.download !== undefined) {
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'template_karyawan.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    console.error('Export error:', error);
+    showNotification('Gagal mengekspor laporan: ' + error.message, 'danger');
   }
 }
