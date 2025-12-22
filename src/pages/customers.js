@@ -406,6 +406,7 @@ async function handleAddCustomer(e) {
 // Global functions for customer actions
 window.viewCustomer = async (customerId) => {
   console.log('🔍 Opening customer detail for ID:', customerId);
+  console.log('🔍 Function called from:', new Error().stack);
   
   if (!customerId) {
     console.error('❌ No customer ID provided');
@@ -588,6 +589,8 @@ window.viewCustomer = async (customerId) => {
       `;
 
     console.log('🎨 Modal content prepared, showing modal...');
+    console.log('📝 Modal content length:', modalContent.length);
+    console.log('📝 Modal content preview:', modalContent.substring(0, 200) + '...');
 
     // Ensure createModal is available
     if (!window.createModal && !createModal) {
