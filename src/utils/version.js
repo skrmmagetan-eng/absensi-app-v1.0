@@ -1,6 +1,6 @@
 // Version Management and Update Notification System
 
-const APP_VERSION = '1.2.7'; // Update this when releasing new version
+const APP_VERSION = '1.2.8'; // Update this when releasing new version
 const VERSION_KEY = 'app_version';
 const UPDATE_DISMISSED_KEY = 'update_dismissed';
 

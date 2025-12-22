@@ -143,6 +143,9 @@ function applyFilters() {
 }
 
 window.viewCustomerMap = async (customerId) => {
+    console.log('🔥 ADMIN viewCustomerMap called with ID:', customerId);
+    console.log('🔥 This should show RICH modal, not simple modal');
+    
     const customer = allCustomers.find(c => c.id === customerId);
     if (!customer) {
         showNotification('Pelanggan tidak ditemukan', 'danger');
