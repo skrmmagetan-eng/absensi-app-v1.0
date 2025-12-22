@@ -1,6 +1,6 @@
 // Version Management and Update Notification System
 
-const APP_VERSION = '1.3.0-fresh-' + Date.now(); // Complete rewrite of customer modal
+const APP_VERSION = '1.3.1-simple-' + Date.now(); // Simplified customer modal
 const VERSION_KEY = 'app_version';
 const UPDATE_DISMISSED_KEY = 'update_dismissed';
 

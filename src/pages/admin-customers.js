@@ -142,178 +142,50 @@ function applyFilters() {
     renderList(filtered);
 }
 
-// ===== FUNGSI BARU: VIEW CUSTOMER DETAIL =====
-// Dibuat ulang dari awal untuk menghindari masalah cache dan kode lama
-
+// ===== FUNGSI SEDERHANA: VIEW CUSTOMER DETAIL =====
 window.showCustomerDetail = async (customerId) => {
-    console.log('🆕 NEW showCustomerDetail called with ID:', customerId);
+    console.log('🆕 showCustomerDetail called with ID:', customerId);
     
-    // Cari customer dari data yang sudah dimuat
-    const customer = allCustomers.find(c => c.id === customerId);
-    if (!customer) {
-        showNotification('Data pelanggan tidak ditemukan', 'danger');
-        return;
-    }
-
-    showLoading('Memuat detail pelanggan...');
-
     try {
-        // Ambil statistik kunjungan
-        const { data: visitStats, error: visitError } = await db.supabase
-            .from('attendance')
-            .select('id, check_in_time, check_out_time, notes')
-            .eq('customer_id', customerId)
-            .order('check_in_time', { ascending: false })
-            .limit(10);
-
-        if (visitError) {
-            console.warn('⚠️ Error loading visit stats:', visitError);
+        // Cari customer dari data yang sudah dimuat
+        const customer = allCustomers.find(c => c.id === customerId);
+        if (!customer) {
+            showNotification('Data pelanggan tidak ditemukan', 'danger');
+            return;
         }
 
-        // Hitung statistik
-        const totalVisits = visitStats?.length || 0;
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        
-        const thisMonthVisits = visitStats?.filter(v => {
-            const visitDate = new Date(v.check_in_time);
-            return visitDate.getMonth() === currentMonth && visitDate.getFullYear() === currentYear;
-        }).length || 0;
-
-        // Kunjungan terakhir
-        const lastVisit = visitStats?.[0];
-        let lastVisitInfo = 'Belum pernah dikunjungi';
-        
-        if (lastVisit) {
-            const lastDate = new Date(lastVisit.check_in_time);
-            const daysDiff = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-            lastVisitInfo = `${lastDate.toLocaleDateString('id-ID')} (${daysDiff} hari lalu)`;
-        }
-
-        hideLoading();
-
-        // Buat konten modal yang bersih
+        // Modal sederhana dulu untuk testing
         const modalHTML = `
-            <div style="line-height: 1.6; font-family: 'Inter', sans-serif;">
+            <div style="padding: 20px; line-height: 1.6;">
+              <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+                <h4 style="margin: 0 0 12px 0; color: #333;">Informasi Pelanggan</h4>
+                <p><strong>📍 Alamat:</strong> ${customer.address || 'Tidak ada alamat'}</p>
+                <p><strong>📞 Telepon:</strong> ${customer.phone || 'Tidak ada nomor'}</p>
+                <p><strong>🗺️ Koordinat:</strong> ${customer.latitude}, ${customer.longitude}</p>
+              </div>
               
-              <!-- Info Kontak -->
-              <div style="background: #f8f9fa; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                  <div>
-                    <div style="color: #6c757d; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">📍 Alamat</div>
-                    <div style="font-weight: 500; color: #212529; font-size: 14px;">${customer.address || 'Tidak ada alamat'}</div>
-                  </div>
-                  <div>
-                    <div style="color: #6c757d; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">📞 Telepon</div>
-                    <div style="font-weight: 500; color: #212529; font-size: 14px;">${customer.phone || 'Tidak ada nomor'}</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Koordinat -->
-              <div style="margin-bottom: 20px;">
-                <div style="color: #6c757d; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">🗺️ Koordinat GPS</div>
-                <div style="font-family: 'Courier New', monospace; background: #e9ecef; padding: 12px; border-radius: 8px; font-size: 13px; color: #495057; border-left: 4px solid #007bff;">
-                  ${customer.latitude}, ${customer.longitude}
-                </div>
-              </div>
-
-              <!-- Statistik Kunjungan -->
-              <div style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); padding: 16px; border-radius: 12px; margin-bottom: 20px;">
-                <div style="font-weight: 700; margin-bottom: 12px; color: #1976d2; font-size: 16px;">📊 Statistik Kunjungan</div>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: center;">
-                  <div>
-                    <div style="font-weight: 700; color: #1976d2; font-size: 24px; margin-bottom: 4px;">${totalVisits}</div>
-                    <div style="color: #6c757d; font-size: 12px; font-weight: 500;">Total Kunjungan</div>
-                  </div>
-                  <div>
-                    <div style="font-weight: 700; color: #388e3c; font-size: 24px; margin-bottom: 4px;">${thisMonthVisits}</div>
-                    <div style="color: #6c757d; font-size: 12px; font-weight: 500;">Bulan Ini</div>
-                  </div>
-                  <div>
-                    <div style="font-weight: 700; color: #f57c00; font-size: 14px; margin-bottom: 4px;">${lastVisitInfo.split('(')[0]}</div>
-                    <div style="color: #6c757d; font-size: 12px; font-weight: 500;">Terakhir</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Riwayat Kunjungan -->
-              ${visitStats && visitStats.length > 0 ? `
-                <div style="margin-bottom: 20px;">
-                  <div style="font-weight: 700; margin-bottom: 12px; color: #1976d2; font-size: 16px;">📅 Riwayat Kunjungan</div>
-                  <div style="max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px;">
-                    ${visitStats.slice(0, 5).map(visit => {
-                      const checkInDate = new Date(visit.check_in_time);
-                      const checkInTime = checkInDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'});
-                      const checkOutTime = visit.check_out_time ? new Date(visit.check_out_time).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}) : '';
-                      
-                      return `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f8f9fa;">
-                          <div>
-                            <div style="font-weight: 600; color: #212529; font-size: 14px;">${checkInDate.toLocaleDateString('id-ID')}</div>
-                            ${visit.notes ? `<div style="color: #6c757d; font-size: 12px; margin-top: 2px;">${visit.notes.substring(0, 40)}${visit.notes.length > 40 ? '...' : ''}</div>` : ''}
-                          </div>
-                          <div style="color: #6c757d; font-size: 12px; text-align: right;">
-                            <div>${checkInTime}${checkOutTime ? ` - ${checkOutTime}` : ''}</div>
-                          </div>
-                        </div>
-                      `;
-                    }).join('')}
-                  </div>
-                </div>
-              ` : `
-                <div style="margin-bottom: 20px;">
-                  <div style="font-weight: 700; margin-bottom: 12px; color: #1976d2; font-size: 16px;">📅 Riwayat Kunjungan</div>
-                  <div style="text-align: center; padding: 24px; color: #6c757d; font-style: italic; background: #f8f9fa; border-radius: 8px;">
-                    Belum ada riwayat kunjungan
-                  </div>
-                </div>
-              `}
-
-              <!-- Catatan -->
-              ${customer.notes ? `
-                <div style="margin-bottom: 20px;">
-                  <div style="color: #6c757d; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">📝 Catatan</div>
-                  <div style="background: #fff3cd; padding: 12px; border-radius: 8px; font-size: 14px; color: #856404; border-left: 4px solid #ffc107;">
-                    "${customer.notes}"
-                  </div>
-                </div>
-              ` : ''}
-
-              <!-- Info Admin -->
-              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px; border-radius: 12px;">
-                <div style="font-weight: 700; margin-bottom: 8px; font-size: 16px;">👨‍💼 Panel Administrator</div>
-                <div style="font-size: 13px; opacity: 0.9; line-height: 1.4;">
-                  Informasi lengkap pelanggan dan analisis kunjungan untuk keperluan monitoring dan evaluasi kinerja.
-                </div>
+              <div style="background: #e3f2fd; padding: 16px; border-radius: 8px;">
+                <h4 style="margin: 0 0 12px 0; color: #1976d2;">📊 Status</h4>
+                <p>Fungsi baru berhasil dipanggil!</p>
+                <p>Data pelanggan berhasil dimuat dari database.</p>
               </div>
             </div>
         `;
 
-        // Tampilkan modal baru
-        const userAction = await createModal(
+        // Tampilkan modal
+        await createModal(
             `👤 ${customer.name}`,
             modalHTML,
             [
                 { label: 'Tutup', action: 'close', type: 'outline' },
                 { label: '📞 Telepon', action: 'call', type: 'outline', hidden: !customer.phone },
-                { label: '🗺️ Buka Maps', action: 'maps', type: 'outline' },
-                { label: '📊 Lihat Histori', action: 'history', type: 'primary' }
+                { label: '🗺️ Maps', action: 'maps', type: 'outline' }
             ].filter(btn => !btn.hidden)
         );
 
-        // Handle aksi user
-        if (userAction === 'call' && customer.phone) {
-            window.open(`tel:${customer.phone}`);
-        } else if (userAction === 'maps') {
-            const mapsUrl = `https://www.google.com/maps?q=${customer.latitude},${customer.longitude}`;
-            window.open(mapsUrl, '_blank');
-        } else if (userAction === 'history') {
-            window.location.hash = `#admin/histori?user_id=${customer.employee_id}`;
-        }
+        console.log('✅ Modal berhasil ditampilkan');
 
     } catch (error) {
-        hideLoading();
         console.error('❌ Error in showCustomerDetail:', error);
         showNotification('Gagal memuat detail pelanggan: ' + error.message, 'danger');
     }
