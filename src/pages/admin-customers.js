@@ -144,32 +144,189 @@ function applyFilters() {
 
 window.viewCustomerMap = async (customerId) => {
     const customer = allCustomers.find(c => c.id === customerId);
-    if (!customer) return;
-
-    if (!customer.latitude || !customer.longitude) {
-        showNotification('Pelanggan ini tidak memiliki koordinat lokasi.', 'warning');
+    if (!customer) {
+        showNotification('Pelanggan tidak ditemukan', 'danger');
         return;
     }
 
-    await createModal(
-        `📍 Lokasi: ${customer.name}`,
-        `
-        <div id="admin-customer-map" style="height: 350px; width: 100%; border-radius: 12px;"></div>
-        <div class="mt-md">
-            <p class="text-sm"><strong>Alamat:</strong><br>${customer.address}</p>
-            <p class="text-xs text-muted mt-2">Koordinat: ${customer.latitude}, ${customer.longitude}</p>
-        </div>
-        `,
-        [{ label: 'Tutup', action: 'close', type: 'outline' }]
-    );
+    showLoading('Memuat detail pelanggan...');
 
-    // Initialize map after modal is in DOM
-    const map = L.map('admin-customer-map').setView([customer.latitude, customer.longitude], 16);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+    try {
+        // Get customer statistics
+        console.log('📊 Loading visit statistics for admin view...');
+        const { data: visitStats, error: visitError } = await db.supabase
+            .from('attendance')
+            .select('id, check_in_time, check_out_time, notes')
+            .eq('customer_id', customerId)
+            .order('check_in_time', { ascending: false })
+            .limit(5);
 
-    L.marker([customer.latitude, customer.longitude]).addTo(map)
-        .bindPopup(`<strong>${customer.name}</strong><br>${customer.address}`)
-        .openPopup();
+        if (visitError) {
+            console.warn('⚠️ Error loading visit stats:', visitError);
+            // Don't throw error, just continue with empty stats
+        }
+
+        console.log('📈 Visit stats loaded:', visitStats);
+
+        const totalVisits = visitStats?.length || 0;
+        const thisMonthVisits = visitStats?.filter(v => {
+            try {
+                const visitDate = new Date(v.check_in_time);
+                const now = new Date();
+                return visitDate.getMonth() === now.getMonth() && visitDate.getFullYear() === now.getFullYear();
+            } catch (e) {
+                console.warn('Date parsing error:', e);
+                return false;
+            }
+        }).length || 0;
+
+        const lastVisit = visitStats?.[0];
+        let lastVisitText = 'Belum pernah dikunjungi';
+        
+        if (lastVisit) {
+            try {
+                const lastVisitDate = new Date(lastVisit.check_in_time);
+                const daysDiff = Math.floor((Date.now() - lastVisitDate.getTime()) / (1000 * 60 * 60 * 24));
+                lastVisitText = `${lastVisitDate.toLocaleDateString('id-ID')} (${daysDiff} hari lalu)`;
+            } catch (e) {
+                console.warn('Date calculation error:', e);
+                lastVisitText = 'Data tidak valid';
+            }
+        }
+
+        console.log('📊 Statistics calculated:', { totalVisits, thisMonthVisits, lastVisitText });
+
+        hideLoading();
+
+        const modalContent = `
+            <div style="line-height: 1.6;">
+              <!-- Customer Info -->
+              <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
+                  <div>
+                    <div style="color: #6c757d; font-size: 0.8rem;">📍 ALAMAT</div>
+                    <div style="font-weight: 500; color: #212529;">${customer.address || 'Tidak ada alamat'}</div>
+                  </div>
+                  <div>
+                    <div style="color: #6c757d; font-size: 0.8rem;">📞 TELEPON</div>
+                    <div style="font-weight: 500; color: #212529;">${customer.phone || 'Tidak ada nomor'}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Location Info -->
+              <div style="margin-bottom: 16px;">
+                <div style="color: #6c757d; font-size: 0.8rem; margin-bottom: 0.5rem;">🗺️ KOORDINAT</div>
+                <div style="font-family: monospace; background: #e9ecef; padding: 0.5rem; border-radius: 4px; font-size: 0.85rem; color: #495057;">
+                  ${customer.latitude}, ${customer.longitude}
+                </div>
+              </div>
+
+              <!-- Statistics -->
+              <div style="background: #e3f2fd; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                <div style="font-weight: 600; margin-bottom: 0.5rem; color: #1976d2;">📊 Statistik Kunjungan</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; text-align: center; font-size: 0.85rem;">
+                  <div>
+                    <div style="font-weight: 600; color: #1976d2; font-size: 1.2rem;">${totalVisits}</div>
+                    <div style="color: #6c757d;">Total</div>
+                  </div>
+                  <div>
+                    <div style="font-weight: 600; color: #388e3c; font-size: 1.2rem;">${thisMonthVisits}</div>
+                    <div style="color: #6c757d;">Bulan Ini</div>
+                  </div>
+                  <div>
+                    <div style="font-weight: 600; color: #f57c00; font-size: 0.9rem;">${lastVisitText.split('(')[0]}</div>
+                    <div style="color: #6c757d;">Terakhir</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recent Visits -->
+              ${visitStats && visitStats.length > 0 ? `
+                <div style="margin-bottom: 16px;">
+                  <div style="font-weight: 600; margin-bottom: 0.5rem; color: #1976d2;">📅 Riwayat Terakhir</div>
+                  <div style="max-height: 120px; overflow-y: auto;">
+                    ${visitStats.slice(0, 3).map(visit => {
+                      try {
+                        const checkInDate = new Date(visit.check_in_time);
+                        const checkInTime = checkInDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'});
+                        const checkOutTime = visit.check_out_time ? new Date(visit.check_out_time).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}) : '';
+                        
+                        return `
+                          <div style="display: flex; justify-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid #dee2e6; font-size: 0.85rem;">
+                            <div>
+                              <div style="font-weight: 500; color: #212529;">${checkInDate.toLocaleDateString('id-ID')}</div>
+                              ${visit.notes ? `<div style="color: #6c757d; font-size: 0.8rem;">${visit.notes.substring(0, 30)}${visit.notes.length > 30 ? '...' : ''}</div>` : ''}
+                            </div>
+                            <div style="color: #6c757d; font-size: 0.8rem;">
+                              ${checkInTime}${checkOutTime ? ` - ${checkOutTime}` : ''}
+                            </div>
+                          </div>
+                        `;
+                      } catch (e) {
+                        console.warn('Visit rendering error:', e);
+                        return '<div style="color: #dc3545; font-size: 0.8rem;">Data tidak valid</div>';
+                      }
+                    }).join('')}
+                  </div>
+                </div>
+              ` : `
+                <div style="margin-bottom: 16px;">
+                  <div style="font-weight: 600; margin-bottom: 0.5rem; color: #1976d2;">📅 Riwayat Terakhir</div>
+                  <div style="text-align: center; padding: 1rem; color: #6c757d; font-style: italic;">
+                    Belum ada riwayat kunjungan
+                  </div>
+                </div>
+              `}
+
+              <!-- Notes -->
+              ${customer.notes ? `
+                <div style="margin-bottom: 16px;">
+                  <div style="color: #6c757d; font-size: 0.8rem; margin-bottom: 0.5rem;">📝 CATATAN</div>
+                  <div style="background: #f8f9fa; padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; font-style: italic; color: #495057;">
+                    "${customer.notes}"
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Admin Info -->
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; border-radius: 8px;">
+                <div style="font-weight: 600; margin-bottom: 0.5rem;">👨‍💼 Panel Admin</div>
+                <div style="font-size: 0.85rem; opacity: 0.9;">
+                  Data pelanggan dan statistik kunjungan untuk monitoring dan analisis.
+                </div>
+              </div>
+            </div>
+          `;
+
+        console.log('🎨 Admin modal content prepared, showing modal...');
+
+        const action = await createModal(
+            `👤 ${customer.name}`,
+            modalContent,
+            [
+                { label: 'Tutup', action: 'close', type: 'outline' },
+                { label: '📞 Telepon', action: 'call', type: 'outline', hidden: !customer.phone },
+                { label: '🗺️ Buka Maps', action: 'maps', type: 'outline' },
+                { label: '📊 Lihat Histori', action: 'history', type: 'primary' }
+            ].filter(btn => !btn.hidden)
+        );
+
+        console.log('👆 Admin action:', action);
+
+        // Handle actions
+        if (action === 'call' && customer.phone) {
+            window.open(`tel:${customer.phone}`);
+        } else if (action === 'maps') {
+            const mapsUrl = `https://www.google.com/maps?q=${customer.latitude},${customer.longitude}`;
+            window.open(mapsUrl, '_blank');
+        } else if (action === 'history') {
+            window.location.hash = `#admin/histori?user_id=${customer.employee_id}`;
+        }
+
+    } catch (error) {
+        hideLoading();
+        console.error('❌ Error in admin viewCustomerMap:', error);
+        showNotification(error.message || 'Gagal memuat detail pelanggan', 'danger');
+    }
 };
