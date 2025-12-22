@@ -55,11 +55,11 @@ export async function renderAdminDashboard() {
           </div>
           ` : ''}
 
-          <div class="stat-card warning" onclick="window.location.hash='#admin/pelanggan'" style="cursor: pointer;">
+          <div class="stat-card warning" onclick="window.location.hash='#pelanggan'" style="cursor: pointer;">
             <div class="stat-header">
-              <div class="stat-icon">⚠️</div>
+              <div class="stat-icon">👥</div>
               <div class="stat-details">
-                <div class="stat-label">New Customers</div>
+                <div class="stat-label">Lihat Pelanggan</div>
                 <div class="stat-value" id="stat-customers">-</div>
               </div>
             </div>

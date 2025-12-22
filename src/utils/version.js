@@ -1,6 +1,6 @@
 // Version Management and Update Notification System
 
-const APP_VERSION = '1.3.1-simple-' + Date.now(); // Simplified customer modal
+const APP_VERSION = '1.4.0-clean-' + Date.now(); // Removed admin-customers.js safely
 const VERSION_KEY = 'app_version';
 const UPDATE_DISMISSED_KEY = 'update_dismissed';
 

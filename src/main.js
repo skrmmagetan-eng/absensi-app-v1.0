@@ -24,7 +24,6 @@ import { renderHistoryPage } from './pages/history.js';
 import { renderAdminHistoryPage } from './pages/admin-history.js';
 import { renderTargetsPage } from './pages/targets.js';
 import { renderAdminTargetsPage } from './pages/admin-targets.js';
-import { renderAdminCustomersPage } from './pages/admin-customers.js';
 
 // Security Configuration
 const SECURITY_CONFIG = {
@@ -297,7 +296,6 @@ const routes = {
   'riwayat': renderHistoryPage,
   'targets': renderTargetsPage,
   'admin/targets': renderAdminTargetsPage,
-  'admin/pelanggan': renderAdminCustomersPage,
 };
 
 // Expose routes globally for manual routing from login
