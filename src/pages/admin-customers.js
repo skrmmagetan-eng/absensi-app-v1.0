@@ -120,7 +120,7 @@ function renderList(list) {
                 <div class="text-right flex flex-col items-end gap-2">
                     <div class="text-sm font-bold">${c.phone || '-'}</div>
                     <div class="flex gap-2">
-                        <button class="btn btn-primary btn-small" onclick="window.viewCustomerMap('${c.id}')">📍 Lokasi</button>
+                        <button class="btn btn-primary btn-small" onclick="window.showCustomerDetail('${c.id}')">📍 Detail</button>
                         <button class="btn btn-outline btn-small" onclick="window.location.hash='#admin/histori?user_id=${c.employee_id}'">📊 Histori</button>
                     </div>
                 </div>
@@ -142,171 +142,158 @@ function applyFilters() {
     renderList(filtered);
 }
 
-window.viewCustomerMap = async (customerId) => {
-    console.log('🔥 ADMIN viewCustomerMap called with ID:', customerId);
-    console.log('🔥 This should show RICH modal, not simple modal');
+// ===== FUNGSI BARU: VIEW CUSTOMER DETAIL =====
+// Dibuat ulang dari awal untuk menghindari masalah cache dan kode lama
+
+window.showCustomerDetail = async (customerId) => {
+    console.log('🆕 NEW showCustomerDetail called with ID:', customerId);
     
+    // Cari customer dari data yang sudah dimuat
     const customer = allCustomers.find(c => c.id === customerId);
     if (!customer) {
-        showNotification('Pelanggan tidak ditemukan', 'danger');
+        showNotification('Data pelanggan tidak ditemukan', 'danger');
         return;
     }
 
     showLoading('Memuat detail pelanggan...');
 
     try {
-        // Get customer statistics
-        console.log('📊 Loading visit statistics for admin view...');
+        // Ambil statistik kunjungan
         const { data: visitStats, error: visitError } = await db.supabase
             .from('attendance')
             .select('id, check_in_time, check_out_time, notes')
             .eq('customer_id', customerId)
             .order('check_in_time', { ascending: false })
-            .limit(5);
+            .limit(10);
 
         if (visitError) {
             console.warn('⚠️ Error loading visit stats:', visitError);
-            // Don't throw error, just continue with empty stats
         }
 
-        console.log('📈 Visit stats loaded:', visitStats);
-
+        // Hitung statistik
         const totalVisits = visitStats?.length || 0;
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        
         const thisMonthVisits = visitStats?.filter(v => {
-            try {
-                const visitDate = new Date(v.check_in_time);
-                const now = new Date();
-                return visitDate.getMonth() === now.getMonth() && visitDate.getFullYear() === now.getFullYear();
-            } catch (e) {
-                console.warn('Date parsing error:', e);
-                return false;
-            }
+            const visitDate = new Date(v.check_in_time);
+            return visitDate.getMonth() === currentMonth && visitDate.getFullYear() === currentYear;
         }).length || 0;
 
+        // Kunjungan terakhir
         const lastVisit = visitStats?.[0];
-        let lastVisitText = 'Belum pernah dikunjungi';
+        let lastVisitInfo = 'Belum pernah dikunjungi';
         
         if (lastVisit) {
-            try {
-                const lastVisitDate = new Date(lastVisit.check_in_time);
-                const daysDiff = Math.floor((Date.now() - lastVisitDate.getTime()) / (1000 * 60 * 60 * 24));
-                lastVisitText = `${lastVisitDate.toLocaleDateString('id-ID')} (${daysDiff} hari lalu)`;
-            } catch (e) {
-                console.warn('Date calculation error:', e);
-                lastVisitText = 'Data tidak valid';
-            }
+            const lastDate = new Date(lastVisit.check_in_time);
+            const daysDiff = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+            lastVisitInfo = `${lastDate.toLocaleDateString('id-ID')} (${daysDiff} hari lalu)`;
         }
-
-        console.log('📊 Statistics calculated:', { totalVisits, thisMonthVisits, lastVisitText });
 
         hideLoading();
 
-        const modalContent = `
-            <div style="line-height: 1.6;">
-              <!-- Customer Info -->
-              <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
+        // Buat konten modal yang bersih
+        const modalHTML = `
+            <div style="line-height: 1.6; font-family: 'Inter', sans-serif;">
+              
+              <!-- Info Kontak -->
+              <div style="background: #f8f9fa; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                   <div>
-                    <div style="color: #6c757d; font-size: 0.8rem;">📍 ALAMAT</div>
-                    <div style="font-weight: 500; color: #212529;">${customer.address || 'Tidak ada alamat'}</div>
+                    <div style="color: #6c757d; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">📍 Alamat</div>
+                    <div style="font-weight: 500; color: #212529; font-size: 14px;">${customer.address || 'Tidak ada alamat'}</div>
                   </div>
                   <div>
-                    <div style="color: #6c757d; font-size: 0.8rem;">📞 TELEPON</div>
-                    <div style="font-weight: 500; color: #212529;">${customer.phone || 'Tidak ada nomor'}</div>
+                    <div style="color: #6c757d; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">📞 Telepon</div>
+                    <div style="font-weight: 500; color: #212529; font-size: 14px;">${customer.phone || 'Tidak ada nomor'}</div>
                   </div>
                 </div>
               </div>
 
-              <!-- Location Info -->
-              <div style="margin-bottom: 16px;">
-                <div style="color: #6c757d; font-size: 0.8rem; margin-bottom: 0.5rem;">🗺️ KOORDINAT</div>
-                <div style="font-family: monospace; background: #e9ecef; padding: 0.5rem; border-radius: 4px; font-size: 0.85rem; color: #495057;">
+              <!-- Koordinat -->
+              <div style="margin-bottom: 20px;">
+                <div style="color: #6c757d; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">🗺️ Koordinat GPS</div>
+                <div style="font-family: 'Courier New', monospace; background: #e9ecef; padding: 12px; border-radius: 8px; font-size: 13px; color: #495057; border-left: 4px solid #007bff;">
                   ${customer.latitude}, ${customer.longitude}
                 </div>
               </div>
 
-              <!-- Statistics -->
-              <div style="background: #e3f2fd; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-                <div style="font-weight: 600; margin-bottom: 0.5rem; color: #1976d2;">📊 Statistik Kunjungan</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; text-align: center; font-size: 0.85rem;">
+              <!-- Statistik Kunjungan -->
+              <div style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+                <div style="font-weight: 700; margin-bottom: 12px; color: #1976d2; font-size: 16px;">📊 Statistik Kunjungan</div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: center;">
                   <div>
-                    <div style="font-weight: 600; color: #1976d2; font-size: 1.2rem;">${totalVisits}</div>
-                    <div style="color: #6c757d;">Total</div>
+                    <div style="font-weight: 700; color: #1976d2; font-size: 24px; margin-bottom: 4px;">${totalVisits}</div>
+                    <div style="color: #6c757d; font-size: 12px; font-weight: 500;">Total Kunjungan</div>
                   </div>
                   <div>
-                    <div style="font-weight: 600; color: #388e3c; font-size: 1.2rem;">${thisMonthVisits}</div>
-                    <div style="color: #6c757d;">Bulan Ini</div>
+                    <div style="font-weight: 700; color: #388e3c; font-size: 24px; margin-bottom: 4px;">${thisMonthVisits}</div>
+                    <div style="color: #6c757d; font-size: 12px; font-weight: 500;">Bulan Ini</div>
                   </div>
                   <div>
-                    <div style="font-weight: 600; color: #f57c00; font-size: 0.9rem;">${lastVisitText.split('(')[0]}</div>
-                    <div style="color: #6c757d;">Terakhir</div>
+                    <div style="font-weight: 700; color: #f57c00; font-size: 14px; margin-bottom: 4px;">${lastVisitInfo.split('(')[0]}</div>
+                    <div style="color: #6c757d; font-size: 12px; font-weight: 500;">Terakhir</div>
                   </div>
                 </div>
               </div>
 
-              <!-- Recent Visits -->
+              <!-- Riwayat Kunjungan -->
               ${visitStats && visitStats.length > 0 ? `
-                <div style="margin-bottom: 16px;">
-                  <div style="font-weight: 600; margin-bottom: 0.5rem; color: #1976d2;">📅 Riwayat Terakhir</div>
-                  <div style="max-height: 120px; overflow-y: auto;">
-                    ${visitStats.slice(0, 3).map(visit => {
-                      try {
-                        const checkInDate = new Date(visit.check_in_time);
-                        const checkInTime = checkInDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'});
-                        const checkOutTime = visit.check_out_time ? new Date(visit.check_out_time).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}) : '';
-                        
-                        return `
-                          <div style="display: flex; justify-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid #dee2e6; font-size: 0.85rem;">
-                            <div>
-                              <div style="font-weight: 500; color: #212529;">${checkInDate.toLocaleDateString('id-ID')}</div>
-                              ${visit.notes ? `<div style="color: #6c757d; font-size: 0.8rem;">${visit.notes.substring(0, 30)}${visit.notes.length > 30 ? '...' : ''}</div>` : ''}
-                            </div>
-                            <div style="color: #6c757d; font-size: 0.8rem;">
-                              ${checkInTime}${checkOutTime ? ` - ${checkOutTime}` : ''}
-                            </div>
+                <div style="margin-bottom: 20px;">
+                  <div style="font-weight: 700; margin-bottom: 12px; color: #1976d2; font-size: 16px;">📅 Riwayat Kunjungan</div>
+                  <div style="max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px;">
+                    ${visitStats.slice(0, 5).map(visit => {
+                      const checkInDate = new Date(visit.check_in_time);
+                      const checkInTime = checkInDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'});
+                      const checkOutTime = visit.check_out_time ? new Date(visit.check_out_time).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}) : '';
+                      
+                      return `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f8f9fa;">
+                          <div>
+                            <div style="font-weight: 600; color: #212529; font-size: 14px;">${checkInDate.toLocaleDateString('id-ID')}</div>
+                            ${visit.notes ? `<div style="color: #6c757d; font-size: 12px; margin-top: 2px;">${visit.notes.substring(0, 40)}${visit.notes.length > 40 ? '...' : ''}</div>` : ''}
                           </div>
-                        `;
-                      } catch (e) {
-                        console.warn('Visit rendering error:', e);
-                        return '<div style="color: #dc3545; font-size: 0.8rem;">Data tidak valid</div>';
-                      }
+                          <div style="color: #6c757d; font-size: 12px; text-align: right;">
+                            <div>${checkInTime}${checkOutTime ? ` - ${checkOutTime}` : ''}</div>
+                          </div>
+                        </div>
+                      `;
                     }).join('')}
                   </div>
                 </div>
               ` : `
-                <div style="margin-bottom: 16px;">
-                  <div style="font-weight: 600; margin-bottom: 0.5rem; color: #1976d2;">📅 Riwayat Terakhir</div>
-                  <div style="text-align: center; padding: 1rem; color: #6c757d; font-style: italic;">
+                <div style="margin-bottom: 20px;">
+                  <div style="font-weight: 700; margin-bottom: 12px; color: #1976d2; font-size: 16px;">📅 Riwayat Kunjungan</div>
+                  <div style="text-align: center; padding: 24px; color: #6c757d; font-style: italic; background: #f8f9fa; border-radius: 8px;">
                     Belum ada riwayat kunjungan
                   </div>
                 </div>
               `}
 
-              <!-- Notes -->
+              <!-- Catatan -->
               ${customer.notes ? `
-                <div style="margin-bottom: 16px;">
-                  <div style="color: #6c757d; font-size: 0.8rem; margin-bottom: 0.5rem;">📝 CATATAN</div>
-                  <div style="background: #f8f9fa; padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; font-style: italic; color: #495057;">
+                <div style="margin-bottom: 20px;">
+                  <div style="color: #6c757d; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">📝 Catatan</div>
+                  <div style="background: #fff3cd; padding: 12px; border-radius: 8px; font-size: 14px; color: #856404; border-left: 4px solid #ffc107;">
                     "${customer.notes}"
                   </div>
                 </div>
               ` : ''}
 
-              <!-- Admin Info -->
-              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; border-radius: 8px;">
-                <div style="font-weight: 600; margin-bottom: 0.5rem;">👨‍💼 Panel Admin</div>
-                <div style="font-size: 0.85rem; opacity: 0.9;">
-                  Data pelanggan dan statistik kunjungan untuk monitoring dan analisis.
+              <!-- Info Admin -->
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px; border-radius: 12px;">
+                <div style="font-weight: 700; margin-bottom: 8px; font-size: 16px;">👨‍💼 Panel Administrator</div>
+                <div style="font-size: 13px; opacity: 0.9; line-height: 1.4;">
+                  Informasi lengkap pelanggan dan analisis kunjungan untuk keperluan monitoring dan evaluasi kinerja.
                 </div>
               </div>
             </div>
-          `;
+        `;
 
-        console.log('🎨 Admin modal content prepared, showing modal...');
-
-        const action = await createModal(
+        // Tampilkan modal baru
+        const userAction = await createModal(
             `👤 ${customer.name}`,
-            modalContent,
+            modalHTML,
             [
                 { label: 'Tutup', action: 'close', type: 'outline' },
                 { label: '📞 Telepon', action: 'call', type: 'outline', hidden: !customer.phone },
@@ -315,21 +302,19 @@ window.viewCustomerMap = async (customerId) => {
             ].filter(btn => !btn.hidden)
         );
 
-        console.log('👆 Admin action:', action);
-
-        // Handle actions
-        if (action === 'call' && customer.phone) {
+        // Handle aksi user
+        if (userAction === 'call' && customer.phone) {
             window.open(`tel:${customer.phone}`);
-        } else if (action === 'maps') {
+        } else if (userAction === 'maps') {
             const mapsUrl = `https://www.google.com/maps?q=${customer.latitude},${customer.longitude}`;
             window.open(mapsUrl, '_blank');
-        } else if (action === 'history') {
+        } else if (userAction === 'history') {
             window.location.hash = `#admin/histori?user_id=${customer.employee_id}`;
         }
 
     } catch (error) {
         hideLoading();
-        console.error('❌ Error in admin viewCustomerMap:', error);
-        showNotification(error.message || 'Gagal memuat detail pelanggan', 'danger');
+        console.error('❌ Error in showCustomerDetail:', error);
+        showNotification('Gagal memuat detail pelanggan: ' + error.message, 'danger');
     }
 };

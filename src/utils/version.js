@@ -1,6 +1,6 @@
 // Version Management and Update Notification System
 
-const APP_VERSION = '1.2.9-' + Date.now(); // Force cache bust with timestamp
+const APP_VERSION = '1.3.0-fresh-' + Date.now(); // Complete rewrite of customer modal
 const VERSION_KEY = 'app_version';
 const UPDATE_DISMISSED_KEY = 'update_dismissed';
 
