@@ -442,25 +442,4 @@ async function handleOrderSubmit(e) {
       btnSubmit.innerHTML = originalText;
     }
   }
-
-    hideLoading();
-    if (error) throw error;
-
-    showNotification('Data Omset berhasil dikirim! 🚀', 'success');
-    setTimeout(() => {
-      window.location.hash = '#order';
-    }, 1000);
-
-  } catch (error) {
-    hideLoading();
-
-    // Reset Button
-    if (btnSubmit) {
-      btnSubmit.disabled = false;
-      btnSubmit.innerHTML = originalText;
-    }
-
-    console.error('Order error:', error);
-    showNotification('Gagal mengirim omset: ' + error.message, 'danger');
-  }
 }
