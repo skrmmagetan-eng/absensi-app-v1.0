@@ -4,8 +4,18 @@ import { compressImage } from '../utils/helpers.js';
 // TODO: Ganti dengan kredensial Supabase Anda
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL').trim();
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+const supabaseServiceKey = (import.meta.env.VITE_SUPABASE_SERVICE_KEY || '').trim();
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Admin client for password reset (requires service_role key)
+export const supabaseAdmin = supabaseServiceKey ? 
+    createClient(supabaseUrl, supabaseServiceKey, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
+    }) : null;
 
 // Authentication helpers
 export const auth = {
@@ -45,6 +55,10 @@ export const auth = {
 
 // Database helpers
 export const db = {
+    // Expose supabase client for direct access (needed for custom-reset.js)
+    supabase: supabase,
+    // Expose admin client for password reset operations
+    supabaseAdmin: supabaseAdmin,
     // Users/Employees
     async getUserProfile(userId) {
         const { data, error } = await supabase

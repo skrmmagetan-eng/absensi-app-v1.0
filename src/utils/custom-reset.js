@@ -23,18 +23,25 @@ export const customReset = {
     try {
       console.log('💾 Saving token to database:', { userId, email, token });
       
+      // First, delete any existing tokens for this user
+      await db.supabase
+        .from('password_reset_tokens')
+        .delete()
+        .eq('user_id', userId);
+      
+      // Then insert new token
       const { data, error } = await db.supabase
         .from('password_reset_tokens')
-        .upsert({
+        .insert({
           user_id: userId,
           email: email,
           token: token,
           expires_at: expiresAt.toISOString(),
           used: false,
           created_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error('❌ Database save error:', error);
@@ -157,15 +164,47 @@ Jangan bagikan kode ini`;
       console.log('🔐 Starting custom reset for:', email);
       
       // 1. Get user data
-      const { data: user, error: userError } = await db.supabase
+      let user, userError;
+      
+      const result = await db.supabase
         .from('users')
         .select('id, name, phone')
         .eq('email', email)
         .single();
+        
+      user = result.data;
+      userError = result.error;
 
       if (userError) {
         console.error('User lookup error:', userError);
-        throw new Error(`Database error: ${userError.message}`);
+        
+        // Handle case where phone column doesn't exist
+        if (userError.message.includes('column "phone" does not exist')) {
+          // Try without phone column
+          const { data: userWithoutPhone, error: userError2 } = await db.supabase
+            .from('users')
+            .select('id, name')
+            .eq('email', email)
+            .single();
+            
+          if (userError2) {
+            throw new Error(`Database error: ${userError2.message}`);
+          }
+          
+          if (!userWithoutPhone) {
+            throw new Error('User tidak ditemukan di database');
+          }
+          
+          // Use provided phone number since DB doesn't have phone column
+          if (!phoneNumber) {
+            throw new Error('Nomor telepon harus disediakan karena tidak tersimpan di database. Silakan update data karyawan terlebih dahulu.');
+          }
+          
+          // Set user data without phone from DB
+          user = { ...userWithoutPhone, phone: null };
+        } else {
+          throw new Error(`Database error: ${userError.message}`);
+        }
       }
       
       if (!user) {
@@ -198,7 +237,13 @@ Jangan bagikan kode ini`;
       // 5. Create WhatsApp link
       const phone = phoneNumber || user.phone;
       if (!phone) {
-        throw new Error('Nomor telepon tidak tersedia untuk karyawan ini');
+        throw new Error('Nomor telepon tidak tersedia untuk karyawan ini. Silakan update data karyawan terlebih dahulu.');
+      }
+
+      // Validate phone number format
+      const cleanPhone = phone.replace(/[^\d]/g, '');
+      if (cleanPhone.length < 10 || cleanPhone.length > 15) {
+        throw new Error(`Format nomor telepon tidak valid: ${phone}. Gunakan format 08xxx atau +62xxx`);
       }
 
       const whatsappLink = this.createWhatsAppLink(phone, whatsappMessage);
@@ -235,7 +280,11 @@ Jangan bagikan kode ini`;
       const tokenData = validation.data;
 
       // 2. Update password in Supabase Auth
-      const { error: authError } = await db.supabase.auth.admin.updateUserById(
+      if (!db.supabaseAdmin) {
+        throw new Error('Service role key tidak dikonfigurasi. Tidak dapat mengupdate password.');
+      }
+
+      const { error: authError } = await db.supabaseAdmin.auth.admin.updateUserById(
         tokenData.user_id,
         { password: newPassword }
       );

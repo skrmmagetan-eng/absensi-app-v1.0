@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Token Validation - SKRM</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            white-space: pre-line;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Test Token Validation</h1>
+        <p>Test apakah token validation sudah bekerja setelah fix RLS policy</p>
+
+        <div class="form-group">
+            <label for="testToken">Token untuk Test:</label>
+            <input type="text" id="testToken" value="FRESH1" placeholder="Masukkan token...">
+        </div>
+
+        <button class="btn" onclick="testTokenValidation()">🔍 Test Token</button>
+        <button class="btn" onclick="testDirectQuery()">📊 Test Direct Query</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
+        
+        const supabase = createClient(
+            'https://nsyndnagwrfzgyifriak.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zeW5kbmFnd3Jmemd5aWZyaWFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2NjA1MzYsImV4cCI6MjA4MTIzNjUzNn0.j43-cO1RoxaY4q5jK8OXTyxEXhJxGA_ptyXfkwdd0vo'
+        );
+
+        function showResult(message, isSuccess = true) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${isSuccess ? 'success' : 'error'}`;
+            resultDiv.textContent = message;
+        }
+
+        // Test token validation (same as app)
+        window.testTokenValidation = async function() {
+            const token = document.getElementById('testToken').value.trim();
+            
+            if (!token) {
+                showResult('❌ Token harus diisi!', false);
+                return;
+            }
+
+            try {
+                showResult('🔄 Testing token validation...');
+
+                // Same query as in simple-reset.js
+                const { data: tokenData, error: tokenError } = await supabase
+                    .from('password_reset_tokens')
+                    .select('*')
+                    .eq('token', token)
+                    .eq('used', false)
+                    .gt('expires_at', new Date().toISOString())
+                    .single();
+
+                if (tokenError) {
+                    showResult(`❌ Token validation failed!
+Error: ${tokenError.message}
+Code: ${tokenError.code}
+Details: ${tokenError.details || 'No details'}
+
+This means:
+- If code 406: RLS policy still blocking
+- If code 404: Token not found or expired
+- If code 401: Authentication issue`, false);
+                    return;
+                }
+
+                if (!tokenData) {
+                    showResult('❌ Token tidak ditemukan atau sudah expired!', false);
+                    return;
+                }
+
+                const expires = new Date(tokenData.expires_at);
+                const now = new Date();
+                const timeLeft = Math.round((expires - now) / 1000 / 60);
+
+                showResult(`✅ Token validation SUCCESS!
+
+Token: ${tokenData.token}
+Email: ${tokenData.email}
+Used: ${tokenData.used}
+Expires: ${expires.toLocaleString('id-ID')}
+Time left: ${timeLeft} minutes
+Status: VALID
+
+🎉 HTTP 406 error is FIXED!`);
+
+            } catch (error) {
+                showResult(`❌ Unexpected error: ${error.message}`, false);
+            }
+        };
+
+        // Test direct query
+        window.testDirectQuery = async function() {
+            try {
+                showResult('🔄 Testing direct database access...');
+
+                // Test table access
+                const { data: tableTest, error: tableError } = await supabase
+                    .from('password_reset_tokens')
+                    .select('count(*)')
+                    .limit(1);
+
+                if (tableError) {
+                    showResult(`❌ Database access failed!
+Error: ${tableError.message}
+Code: ${tableError.code}
+
+RLS policies are still blocking access.`, false);
+                    return;
+                }
+
+                // Get recent tokens
+                const { data: recentTokens, error: recentError } = await supabase
+                    .from('password_reset_tokens')
+                    .select('token, email, used, expires_at, created_at')
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                if (recentError) {
+                    showResult(`❌ Query failed: ${recentError.message}`, false);
+                    return;
+                }
+
+                let result = `✅ Database access SUCCESS!
+
+Recent tokens (${recentTokens.length} found):
+`;
+
+                recentTokens.forEach((token, index) => {
+                    const expires = new Date(token.expires_at);
+                    const isExpired = new Date() > expires;
+                    const status = isExpired ? '❌ EXPIRED' : '✅ VALID';
+                    result += `
+${index + 1}. ${token.token}
+   Email: ${token.email}
+   Status: ${status}
+   Used: ${token.used}
+   Created: ${new Date(token.created_at).toLocaleString('id-ID')}`;
+                });
+
+                showResult(result);
+
+            } catch (error) {
+                showResult(`❌ Unexpected error: ${error.message}`, false);
+            }
+        };
+
+        // Auto-test on load
+        setTimeout(() => {
+            testDirectQuery();
+        }, 1000);
+    </script>
+</body>
+</html>

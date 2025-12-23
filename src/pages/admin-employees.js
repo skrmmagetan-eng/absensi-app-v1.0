@@ -2,7 +2,7 @@ import { db, supabase } from '../lib/supabase.js'; // Import supabase main clien
 import { createClient } from '@supabase/supabase-js'; // Import factory for temp client
 import { renderNavbar } from '../components/navigation.js';
 import { showNotification, showLoading, hideLoading, createModal, formatDate } from '../utils/helpers.js';
-import { customReset } from '../utils/custom-reset.js';
+import { simpleReset } from '../utils/simple-reset.js';
 
 let employeesCache = [];
 
@@ -127,7 +127,7 @@ async function loadEmployees() {
         try {
           console.log('🔐 Testing custom reset for:', { email, phone, name });
           
-          const result = await customReset.initiateCustomReset(email, phone, name);
+          const result = await simpleReset.initiateReset(email, phone, name);
           
           hideLoading();
           
@@ -186,6 +186,10 @@ async function loadEmployees() {
               troubleshooting = `\n\n🔧 TROUBLESHOOTING:\n1. Pastikan Anda login sebagai admin\n2. Cek RLS policies di Supabase\n3. Verifikasi role user di database`;
             } else if (result.error.includes('User tidak ditemukan')) {
               troubleshooting = `\n\n🔧 TROUBLESHOOTING:\n1. Pastikan email karyawan terdaftar\n2. Cek tabel users di database\n3. Verifikasi data karyawan`;
+            } else if (result.error.includes('Service role key')) {
+              troubleshooting = `\n\n🔧 TROUBLESHOOTING:\n1. Tambahkan VITE_SUPABASE_SERVICE_KEY ke file .env\n2. Dapatkan service_role key dari Supabase Dashboard\n3. Restart aplikasi setelah update .env\n4. Baca file FIX_RESET_PASSWORD_WA.md untuk panduan lengkap`;
+            } else if (result.error.includes('Nomor telepon tidak tersedia')) {
+              troubleshooting = `\n\n🔧 TROUBLESHOOTING:\n1. Pastikan field 'phone' terisi di data karyawan\n2. Update data karyawan di halaman admin\n3. Format nomor: 08xxx atau +62xxx`;
             }
             
             showNotification(errorMessage, 'danger');

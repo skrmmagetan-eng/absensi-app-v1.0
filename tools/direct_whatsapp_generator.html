@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Reset Password WhatsApp - SKRM (Database Integrated)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-whatsapp {
+            background: #25D366;
+        }
+        .btn-whatsapp:hover {
+            background: #1da851;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .token {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #007bff;
+        }
+        .message-preview {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            white-space: pre-line;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .hidden {
+            display: none;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Generator Reset Password</h1>
+            <p>SKRM Absensi - WhatsApp Reset System (Database Integrated)</p>
+        </div>
+
+        <div class="form-group">
+            <label for="serviceKey">🔑 Service Role Key (untuk simpan ke database):</label>
+            <input type="password" id="serviceKey" placeholder="Paste service role key..." value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zeW5kbmFnd3Jmemd5aWZyaWFrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTY2MDUzNiwiZXhwIjoyMDgxMjM2NTM2fQ.-dUUz4NFch9cqWOzUZvUbMUmTmid3_1V3PM6VPOPJjc">
+        </div>
+
+        <form id="resetForm">
+            <div class="form-group">
+                <label for="employeeName">Nama Karyawan:</label>
+                <select id="employeeName" required>
+                    <option value="">Pilih Karyawan</option>
+                    <option value="Shaka Abrisam|shakadigital.id@gmail.com|085739605089">Shaka Abrisam (Manager)</option>
+                    <option value="Achmad Verry Trisnanto|achmadverry20@gmail.com|081234567890">Achmad Verry Trisnanto</option>
+                    <option value="Angga Septian Kharisma|anggaskharisma@gmail.com|081234567891">Angga Septian Kharisma</option>
+                    <option value="Dwiky Dias Priambodo|dwikydiaspriambodo@gmail.com|081234567892">Dwiky Dias Priambodo</option>
+                    <option value="Miftakhul Azis|mazis977@gmail.com|081234567893">Miftakhul Azis</option>
+                    <option value="Purwanto|wicaksonopurwanto@gmail.com|081234567894">Purwanto</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="customPhone">Atau Input Nomor Manual:</label>
+                <input type="tel" id="customPhone" placeholder="085156789012 (opsional)">
+            </div>
+
+            <button type="submit" class="btn" id="generateBtn">🔑 Generate & Save to Database</button>
+        </form>
+
+        <div id="status"></div>
+
+        <div id="result" class="result hidden">
+            <h3>✅ Kode Reset Berhasil Dibuat!</h3>
+            
+            <div class="token" id="tokenDisplay"></div>
+            
+            <div>
+                <strong>📱 Nomor WhatsApp:</strong> <span id="phoneDisplay"></span>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <button id="whatsappBtn" class="btn btn-whatsapp">📱 Buka WhatsApp</button>
+                <button id="copyMessageBtn" class="btn">📋 Copy Pesan</button>
+                <button id="copyTokenBtn" class="btn">🔑 Copy Kode Saja</button>
+            </div>
+
+            <div>
+                <strong>📝 Preview Pesan:</strong>
+                <div class="message-preview" id="messagePreview"></div>
+            </div>
+
+            <div style="margin-top: 20px; padding: 15px; background: #d1ecf1; border-radius: 8px;">
+                <strong>✅ Token Tersimpan di Database!</strong><br>
+                Karyawan sekarang bisa menggunakan token ini untuk reset password di aplikasi.
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Supabase
+        import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
+        
+        const SUPABASE_URL = 'https://nsyndnagwrfzgyifriak.supabase.co';
+        let supabaseAdmin = null;
+
+        // Generate random token
+        function generateToken() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let token = '';
+            for (let i = 0; i < 6; i++) {
+                token += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return token;
+        }
+
+        // Format phone number for WhatsApp
+        function formatPhoneForWhatsApp(phone) {
+            const cleanPhone = phone.replace(/[^\d]/g, '');
+            let formattedPhone = cleanPhone;
+            
+            if (cleanPhone.startsWith('0')) {
+                formattedPhone = '62' + cleanPhone.substring(1);
+            } else if (!cleanPhone.startsWith('62')) {
+                formattedPhone = '62' + cleanPhone;
+            }
+            
+            return formattedPhone;
+        }
+
+        // Generate WhatsApp message
+        function generateMessage(name, token) {
+            const expireTime = new Date(Date.now() + 30*60*1000).toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            return `🔐 RESET PASSWORD - SKRM ABSENSI
+
+Halo ${name},
+
+Kode reset password Anda:
+*${token}*
+
+📱 Cara reset password:
+1. Buka aplikasi absensi
+2. Klik "Lupa Password?"
+3. Masukkan kode: *${token}*
+4. Buat password baru
+
+⏰ Kode berlaku sampai: ${expireTime}
+🔒 Jangan bagikan kode ini ke siapa pun
+
+SKRM Management System`;
+        }
+
+        // Create WhatsApp link
+        function createWhatsAppLink(phone, message) {
+            const formattedPhone = formatPhoneForWhatsApp(phone);
+            return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+        }
+
+        // Show status message
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        // Copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('✅ Disalin ke clipboard!');
+            });
+        }
+
+        // Show notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed; top: 20px; right: 20px; background: #28a745;
+                color: white; padding: 15px 25px; border-radius: 8px; z-index: 1000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        // Initialize Supabase Admin
+        function initSupabase() {
+            const serviceKey = document.getElementById('serviceKey').value.trim();
+            
+            if (!serviceKey) {
+                showStatus('❌ Service key harus diisi untuk menyimpan ke database!', 'error');
+                return false;
+            }
+            
+            try {
+                supabaseAdmin = createClient(SUPABASE_URL, serviceKey, {
+                    auth: {
+                        autoRefreshToken: false,
+                        persistSession: false
+                    }
+                });
+                return true;
+            } catch (error) {
+                showStatus('❌ Error creating Supabase client: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // Get user data from database
+        async function getUserData(email) {
+            try {
+                const { data, error } = await supabaseAdmin
+                    .from('users')
+                    .select('id, name, phone')
+                    .eq('email', email)
+                    .single();
+                
+                if (error) throw error;
+                return { success: true, data };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Save token to database
+        async function saveTokenToDatabase(userId, email, token) {
+            const expiresAt = new Date(Date.now() + 30*60*1000);
+            
+            try {
+                // Delete old tokens for this user
+                await supabaseAdmin
+                    .from('password_reset_tokens')
+                    .delete()
+                    .eq('user_id', userId);
+                
+                // Insert new token
+                const { error } = await supabaseAdmin
+                    .from('password_reset_tokens')
+                    .insert({
+                        user_id: userId,
+                        email: email,
+                        token: token,
+                        expires_at: expiresAt.toISOString(),
+                        used: false,
+                        created_at: new Date().toISOString()
+                    });
+                
+                if (error) throw error;
+                
+                return { success: true, expiresAt };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('resetForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const generateBtn = document.getElementById('generateBtn');
+            const originalText = generateBtn.textContent;
+            generateBtn.disabled = true;
+            generateBtn.textContent = '🔄 Processing...';
+
+            const employeeSelect = document.getElementById('employeeName');
+            const customPhone = document.getElementById('customPhone').value.trim();
+
+            if (!employeeSelect.value && !customPhone) {
+                showStatus('❌ Pilih karyawan atau masukkan nomor telepon manual!', 'error');
+                generateBtn.disabled = false;
+                generateBtn.textContent = originalText;
+                return;
+            }
+
+            let name, email, phone;
+
+            if (employeeSelect.value) {
+                const [empName, empEmail, empPhone] = employeeSelect.value.split('|');
+                name = empName;
+                email = empEmail;
+                phone = customPhone || empPhone;
+            } else {
+                name = 'Karyawan';
+                email = 'manual@skrm.com';
+                phone = customPhone;
+            }
+
+            if (!phone) {
+                showStatus('❌ Nomor telepon harus diisi!', 'error');
+                generateBtn.disabled = false;
+                generateBtn.textContent = originalText;
+                return;
+            }
+
+            try {
+                // Initialize Supabase
+                showStatus('🔄 Connecting to database...', 'warning');
+                if (!initSupabase()) {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = originalText;
+                    return;
+                }
+
+                // Get user data from database (if not manual)
+                if (employeeSelect.value) {
+                    showStatus('🔄 Getting user data from database...', 'warning');
+                    const userResult = await getUserData(email);
+                    if (!userResult.success) {
+                        throw new Error('User tidak ditemukan: ' + userResult.error);
+                    }
+                    showStatus('✅ User found: ' + userResult.data.name, 'success');
+                }
+
+                // Generate token
+                const token = generateToken();
+                showStatus('🔄 Generating token...', 'warning');
+
+                // Save token to database (if not manual)
+                if (employeeSelect.value) {
+                    showStatus('🔄 Saving token to database...', 'warning');
+                    const userResult = await getUserData(email);
+                    const saveResult = await saveTokenToDatabase(userResult.data.id, email, token);
+                    if (!saveResult.success) {
+                        throw new Error('Gagal menyimpan token: ' + saveResult.error);
+                    }
+                    showStatus('✅ Token berhasil disimpan ke database!', 'success');
+                } else {
+                    showStatus('⚠️ Manual mode - token tidak disimpan ke database', 'warning');
+                }
+
+                // Generate message and WhatsApp link
+                const message = generateMessage(name, token);
+                const whatsappLink = createWhatsAppLink(phone, message);
+
+                // Display results
+                document.getElementById('tokenDisplay').textContent = token;
+                document.getElementById('phoneDisplay').textContent = '+' + formatPhoneForWhatsApp(phone);
+                document.getElementById('messagePreview').textContent = message;
+                document.getElementById('result').classList.remove('hidden');
+
+                // Set up buttons
+                document.getElementById('whatsappBtn').onclick = () => {
+                    window.open(whatsappLink, '_blank');
+                };
+
+                document.getElementById('copyMessageBtn').onclick = () => {
+                    copyToClipboard(message);
+                };
+
+                document.getElementById('copyTokenBtn').onclick = () => {
+                    copyToClipboard(token);
+                };
+
+                // Scroll to result
+                document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                showStatus('❌ Error: ' + error.message, 'error');
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = originalText;
+            }
+        });
+    </script>
+</body>
+</html>

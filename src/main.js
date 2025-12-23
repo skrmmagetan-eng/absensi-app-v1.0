@@ -3,6 +3,7 @@ import { router, state } from './lib/router.js';
 import { themeManager } from './utils/theme.js';
 import { versionManager } from './utils/version.js';
 import { authChecker } from './utils/auth-check.js';
+import { roleSecurity } from './utils/role-security.js';
 
 // Initialize Theme
 themeManager.init();
@@ -198,28 +199,26 @@ class SecurityManager {
       const { data: profile, error } = await db.getUserProfile(user.id);
       
       if (error || !profile) {
+        roleSecurity.log('PROFILE_FETCH_FAILED', { userId: user.id, error: error?.message });
         this.forceLogout('User profile not found');
         return;
       }
       
-      if (profile.status === 'inactive') {
-        this.forceLogout('Account has been deactivated');
+      // Use security utility to validate profile
+      if (!roleSecurity.validateUserProfile(profile, user.id)) {
+        this.forceLogout('Security validation failed');
         return;
       }
       
-      // Update profile if changed
+      // Check for role changes with security validation
       const currentProfile = state.getState('profile');
-      if (currentProfile?.role !== profile.role) {
-        state.updateState({ profile });
-        
-        // If role changed and user is on admin page, redirect
-        const currentPath = window.location.hash.replace('#', '');
-        if (currentPath.startsWith('admin') && !['admin', 'manager'].includes(profile.role)) {
-          window.location.hash = '#dashboard';
-        }
+      if (!roleSecurity.validateRoleChange(currentProfile, profile, 'periodic_validation')) {
+        this.forceLogout('Role change detected - please login again for security');
+        return;
       }
       
     } catch (error) {
+      roleSecurity.log('SECURITY_CHECK_ERROR', { userId: user.id, error: error.message });
       console.error('Security check failed:', error);
       this.forceLogout('Security validation failed');
     }
@@ -336,18 +335,51 @@ async function handleRouting() {
     try {
       // Re-fetch profile to ensure role hasn't changed or account hasn't been blocked
       const { data: freshProfile, error } = await db.getUserProfile(user.id);
-      if (error || !['admin', 'manager'].includes(freshProfile?.role)) {
-        console.error('Security Breach or Role Change detected.');
-        state.updateState({ profile: freshProfile || null });
-        window.location.hash = '#dashboard'; // Kick back to dashboard
+      if (error || !freshProfile) {
+        roleSecurity.log('ADMIN_ROUTE_PROFILE_FETCH_FAILED', { 
+          route: path, 
+          userId: user.id, 
+          error: error?.message 
+        });
+        window.location.hash = '#dashboard';
         return;
       }
-      // Update local state with fresh data
-      if (freshProfile.role !== profile?.role) {
-        state.updateState({ profile: freshProfile });
+      
+      // Use security utility to validate profile and admin access
+      if (!roleSecurity.validateUserProfile(freshProfile, user.id)) {
+        window.location.hash = '#login';
+        return;
       }
-      profile = freshProfile;
+      
+      if (!roleSecurity.checkAdminAccess(freshProfile, path)) {
+        window.location.hash = '#dashboard';
+        return;
+      }
+      
+      // Update local state with fresh data only if validation passes
+      const currentProfile = state.getState('profile');
+      if (roleSecurity.validateRoleChange(currentProfile, freshProfile, 'admin_route_check')) {
+        if (freshProfile.role !== currentProfile?.role) {
+          roleSecurity.log('ADMIN_ROUTE_PROFILE_UPDATE', {
+            route: path,
+            userId: freshProfile.id,
+            email: freshProfile.email,
+            role: freshProfile.role
+          });
+          state.updateState({ profile: freshProfile });
+        }
+        profile = freshProfile;
+      } else {
+        // Security validation failed, force re-login
+        window.location.hash = '#login';
+        return;
+      }
     } catch (err) {
+      roleSecurity.log('ADMIN_ROUTE_SECURITY_ERROR', { 
+        route: path, 
+        error: err.message 
+      });
+      console.error('Admin route security check failed:', err);
       window.location.hash = '#login';
       return;
     }

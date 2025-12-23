@@ -294,6 +294,11 @@ export const hideLoading = () => {
 
 // Modal utilities
 export const createModal = (title, content, buttons = []) => {
+    // Ensure buttons is always an array
+    if (!Array.isArray(buttons)) {
+        buttons = [];
+    }
+    
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `

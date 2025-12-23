@@ -3,6 +3,7 @@ import { state } from '../lib/router.js';
 import { router } from '../lib/router.js';
 import { showNotification, showLoading, hideLoading, formatCurrency, formatDate, formatOrderItems } from '../utils/helpers.js';
 import { renderNavbar, renderBottomNav } from '../components/navigation.js';
+import { createSearchableDropdown } from '../utils/searchable-dropdown.js';
 
 export async function renderOrderPage() {
   const app = document.getElementById('app');
@@ -266,10 +267,17 @@ async function loadCustomersForDropdown() {
   try {
     const { data: customers } = await db.getCustomers(user.id);
     if (customers && customers.length > 0) {
-      select.innerHTML = `
-        <option value="">-- Pilih Pelanggan --</option>
-        ${customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
-      `;
+      // Store customers data for search functionality
+      window.customersData = customers;
+      
+      // Replace select with searchable dropdown
+      createSearchableDropdown('customer', customers, {
+        placeholder: '-- Pilih Pelanggan --',
+        searchPlaceholder: '🔍 Cari pelanggan (nama, alamat, jenis ternak)...',
+        displayField: (customer) => `${customer.name} - ${customer.address}`,
+        searchFields: ['name', 'address', 'livestock_type'],
+        valueField: 'id'
+      });
     } else {
       select.innerHTML = '<option value="">Belum ada pelanggan aktif</option>';
     }

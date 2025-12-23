@@ -3,7 +3,7 @@ import { state } from '../lib/router.js';
 import { router } from '../lib/router.js';
 import { showNotification, showLoading, hideLoading, validate, branding, storage, createModal } from '../utils/helpers.js';
 import { versionManager } from '../utils/version.js';
-import { customReset } from '../utils/custom-reset.js';
+import { simpleReset } from '../utils/simple-reset.js';
 
 export function renderLoginPage() {
   const app = document.getElementById('app');
@@ -278,7 +278,7 @@ function showForgotPasswordModal() {
     <div class="mt-md text-center text-sm text-muted">
       <p>💡 Belum dapat kode? Hubungi admin untuk mendapatkan kode reset via WhatsApp</p>
     </div>
-  `, null, false); // Don't auto-close
+  `, []); // Empty buttons array
 
   // Auto-format token input
   const tokenInput = document.getElementById('reset-token');
@@ -333,7 +333,7 @@ async function handlePasswordReset(e) {
   submitBtn.textContent = 'Memproses...';
 
   try {
-    const result = await customReset.resetPasswordWithToken(token, newPassword);
+    const result = await simpleReset.useToken(token, newPassword);
 
     if (result.success) {
       // Close modal

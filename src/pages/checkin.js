@@ -3,6 +3,7 @@ import { state } from '../lib/router.js';
 import { router } from '../lib/router.js';
 import { geo, showNotification, showLoading, hideLoading } from '../utils/helpers.js';
 import { renderNavbar, renderBottomNav } from '../components/navigation.js';
+import { createSearchableDropdown } from '../utils/searchable-dropdown.js';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -115,14 +116,24 @@ async function loadCustomers() {
       return;
     }
 
-    select.innerHTML = `
-      <option value="">-- Pilih Pelanggan --</option>
-      ${customers.map(c => `
-        <option value="${c.id}" data-lat="${c.latitude}" data-lng="${c.longitude}">
-          ${c.name} - ${c.address}
-        </option>
-      `).join('')}
-    `;
+    // Store customers data for search functionality
+    window.customersData = customers;
+    
+    // Replace select with searchable dropdown
+    createSearchableDropdown('customer', customers, {
+      placeholder: '-- Pilih Pelanggan --',
+      searchPlaceholder: '🔍 Cari pelanggan (nama, alamat, jenis ternak)...',
+      displayField: (customer) => `${customer.name} - ${customer.address}`,
+      searchFields: ['name', 'address', 'livestock_type'],
+      valueField: 'id',
+      onSelect: (customer) => {
+        // Store customer data for distance calculation
+        const select = document.getElementById('customer');
+        select.dataset.lat = customer.latitude;
+        select.dataset.lng = customer.longitude;
+        calculateDistance();
+      }
+    });
   } catch (error) {
     console.error('Error loading customers:', error);
     select.innerHTML = '<option value="">Error memuat pelanggan</option>';
@@ -210,18 +221,17 @@ async function getCurrentLocation() {
 
 function calculateDistance() {
   const customerSelect = document.getElementById('customer');
-  const selectedOption = customerSelect.options[customerSelect.selectedIndex];
   const locationInfo = document.getElementById('location-info');
   const distanceInfo = document.getElementById('distance-info');
   const distanceText = document.getElementById('distance-text');
 
-  if (!selectedOption.value || !locationInfo.dataset.lat) {
+  if (!customerSelect.value || !locationInfo.dataset.lat) {
     distanceInfo.classList.add('hidden');
     return;
   }
 
-  const customerLat = parseFloat(selectedOption.dataset.lat);
-  const customerLng = parseFloat(selectedOption.dataset.lng);
+  const customerLat = parseFloat(customerSelect.dataset.lat);
+  const customerLng = parseFloat(customerSelect.dataset.lng);
   const currentLat = parseFloat(locationInfo.dataset.lat);
   const currentLng = parseFloat(locationInfo.dataset.lng);
 
