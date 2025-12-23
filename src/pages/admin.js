@@ -31,9 +31,9 @@ export async function renderAdminDashboard() {
           </div>
         </div>
 
-        <!-- Global Stats -->
+        <!-- Global Stats & Quick Actions Combined -->
         <div class="stats-grid">
-          <div class="stat-card primary">
+          <div class="stat-card primary clickable" onclick="window.location.hash='#admin/karyawan'">
             <div class="stat-header">
               <div class="stat-icon">👥</div>
               <div class="stat-details">
@@ -41,10 +41,14 @@ export async function renderAdminDashboard() {
                 <div class="stat-value" id="stat-employees">-</div>
               </div>
             </div>
+            <div class="stat-action">
+              <span class="action-text">Kelola Karyawan</span>
+              <span class="action-arrow">→</span>
+            </div>
           </div>
           
           ${!isManager ? `
-          <div class="stat-card success">
+          <div class="stat-card success clickable" onclick="window.location.hash='#admin/orders'">
             <div class="stat-header">
               <div class="stat-icon">💰</div>
               <div class="stat-details">
@@ -52,49 +56,59 @@ export async function renderAdminDashboard() {
                 <div class="stat-value" id="stat-revenue">-</div>
               </div>
             </div>
+            <div class="stat-action">
+              <span class="action-text">Kelola Omset</span>
+              <span class="action-arrow">→</span>
+            </div>
           </div>
           ` : ''}
 
-          <div class="stat-card warning" onclick="window.location.hash='#pelanggan'" style="cursor: pointer;">
+          <div class="stat-card warning clickable" onclick="window.location.hash='#admin/pelanggan'">
             <div class="stat-header">
-              <div class="stat-icon">👥</div>
+              <div class="stat-icon">⚠️</div>
               <div class="stat-details">
-                <div class="stat-label">Lihat Pelanggan</div>
+                <div class="stat-label">New Customers</div>
                 <div class="stat-value" id="stat-customers">-</div>
               </div>
+            </div>
+            <div class="stat-action">
+              <span class="action-text">Lihat Pelanggan</span>
+              <span class="action-arrow">→</span>
+            </div>
+          </div>
+
+          <div class="stat-card danger clickable" onclick="window.location.hash='#admin/targets'">
+            <div class="stat-header">
+              <div class="stat-icon">🎯</div>
+              <div class="stat-details">
+                <div class="stat-label">Target KPI</div>
+                <div class="stat-value" id="kpi-target">-</div>
+              </div>
+            </div>
+            <div class="stat-action">
+              <span class="action-text">Kelola Target</span>
+              <span class="action-arrow">→</span>
             </div>
           </div>
         </div>
 
-        <!-- Quick Actions for Admin -->
+        <!-- Additional Menu -->
         <div class="card mb-lg">
           <div class="card-header">
-            <h3 class="card-title">⚡ Aksi Cepat</h3>
+            <h3 class="card-title">Menu Tambahan</h3>
           </div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem;">
-            <button class="btn btn-primary" onclick="window.location.hash='#admin/karyawan'">
-              <span>👥</span>
-              <span>Karyawan</span>
-            </button>
-            <button class="btn btn-success" onclick="window.location.hash='#admin/orders'">
-              <span>📦</span>
-              <span>Omset</span>
-            </button>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
             <button class="btn btn-outline" onclick="window.location.hash='#admin/katalog'">
               <span>🛍️</span>
-              <span>Katalog</span>
+              <span>Katalog Produk</span>
             </button>
             <button class="btn btn-outline" onclick="window.location.hash='#admin/histori'">
               <span>📜</span>
-              <span>Aktivitas</span>
-            </button>
-            <button class="btn btn-outline" onclick="window.location.hash='#admin/targets'">
-              <span>🎯</span>
-              <span>Target</span>
+              <span>Riwayat Aktivitas</span>
             </button>
             <button class="btn btn-outline" onclick="window.location.hash='#admin/settings'">
               <span>⚙️</span>
-              <span>Settings</span>
+              <span>Pengaturan</span>
             </button>
           </div>
         </div>

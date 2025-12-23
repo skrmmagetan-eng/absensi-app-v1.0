@@ -621,6 +621,21 @@ a:hover {
   transition: all var(--transition-base);
 }
 
+.stat-card.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.stat-card.clickable:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.stat-card.clickable:active {
+  transform: translateY(-2px);
+}
+
 .stat-card::before {
   content: '';
   position: absolute;
@@ -657,6 +672,35 @@ a:hover {
 
 .stat-card:hover::before {
   transform: scale(1.5);
+}
+
+.stat-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  transition: all var(--transition-base);
+}
+
+.stat-card.clickable:hover .stat-action {
+  color: var(--text-primary);
+}
+
+.action-text {
+  font-weight: 500;
+}
+
+.action-arrow {
+  font-size: 1rem;
+  transition: transform var(--transition-base);
+}
+
+.stat-card.clickable:hover .action-arrow {
+  transform: translateX(4px);
 }
 
 .stat-header {

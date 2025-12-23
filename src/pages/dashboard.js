@@ -20,9 +20,9 @@ export async function renderDashboardPage() {
           <p style="color: var(--text-muted);">${formatDate(new Date())}</p>
         </div>
 
-        <!-- Quick Stats -->
+        <!-- Stats & Quick Actions Combined -->
         <div class="stats-grid" id="stats-container">
-          <div class="stat-card primary">
+          <div class="stat-card primary clickable" onclick="window.location.hash='#check-in'">
             <div class="stat-header">
               <div class="stat-icon">📍</div>
               <div class="stat-details">
@@ -30,9 +30,13 @@ export async function renderDashboardPage() {
                 <div class="stat-value" id="today-attendance">-</div>
               </div>
             </div>
+            <div class="stat-action">
+              <span class="action-text">Tap untuk Check In</span>
+              <span class="action-arrow">→</span>
+            </div>
           </div>
 
-          <div class="stat-card success">
+          <div class="stat-card success clickable" onclick="window.location.hash='#pelanggan'">
             <div class="stat-header">
               <div class="stat-icon">👥</div>
               <div class="stat-details">
@@ -40,9 +44,13 @@ export async function renderDashboardPage() {
                 <div class="stat-value" id="total-customers">-</div>
               </div>
             </div>
+            <div class="stat-action">
+              <span class="action-text">Kelola Pelanggan</span>
+              <span class="action-arrow">→</span>
+            </div>
           </div>
 
-          <div class="stat-card warning">
+          <div class="stat-card warning clickable" onclick="window.location.hash='#order/baru'">
             <div class="stat-header">
               <div class="stat-icon">📦</div>
               <div class="stat-details">
@@ -50,9 +58,13 @@ export async function renderDashboardPage() {
                 <div class="stat-value" id="total-orders">-</div>
               </div>
             </div>
+            <div class="stat-action">
+              <span class="action-text">Input Omset Baru</span>
+              <span class="action-arrow">→</span>
+            </div>
           </div>
 
-          <div class="stat-card danger">
+          <div class="stat-card danger clickable" onclick="window.location.hash='#targets'">
             <div class="stat-header">
               <div class="stat-icon">⭐</div>
               <div class="stat-details">
@@ -60,38 +72,26 @@ export async function renderDashboardPage() {
                 <div class="stat-value" id="kpi-score">-</div>
               </div>
             </div>
+            <div class="stat-action">
+              <span class="action-text">Lihat Target</span>
+              <span class="action-arrow">→</span>
+            </div>
           </div>
         </div>
 
-        <!-- Quick Actions -->
+        <!-- Menu Tambahan -->
         <div class="card mb-lg">
           <div class="card-header">
-            <h3 class="card-title">Aksi Cepat</h3>
+            <h3 class="card-title">Menu Tambahan</h3>
           </div>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
-            <button class="btn btn-primary" onclick="window.location.hash='#check-in'">
-              <span>📍</span>
-              <span>Check In</span>
-            </button>
-            <button class="btn btn-success" onclick="window.location.hash='#pelanggan/tambah'">
-              <span>➕</span>
-              <span>Tambah Pelanggan</span>
-            </button>
-            <button class="btn btn-outline" onclick="window.location.hash='#order/baru'">
-              <span>📦</span>
-              <span>Input Omset</span>
-            </button>
             <button class="btn btn-outline" onclick="window.location.hash='#katalog'">
               <span>🛍️</span>
-              <span>Lihat Katalog</span>
+              <span>Katalog Produk</span>
             </button>
             <button class="btn btn-outline" onclick="window.location.hash='#riwayat'">
               <span>📊</span>
-              <span>Riwayat</span>
-            </button>
-            <button class="btn btn-outline" onclick="window.location.hash='#targets'">
-              <span>🎯</span>
-              <span>Target Saya</span>
+              <span>Riwayat Lengkap</span>
             </button>
           </div>
         </div>

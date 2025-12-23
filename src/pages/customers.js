@@ -33,7 +33,7 @@ export async function renderCustomersPage() {
             type="text"
             id="search-input"
             class="form-input"
-            placeholder="🔍 Cari pelanggan..."
+            placeholder="🔍 Cari pelanggan (nama, alamat, atau jenis ternak)..."
             style="margin: 0;"
           />
         </div>
@@ -102,41 +102,67 @@ async function loadCustomers() {
 function renderCustomersList(customers) {
   const container = document.getElementById('customers-container');
 
-  container.innerHTML = customers.map(customer => `
-    <div class="card mb-md customer-item" data-name="${customer.name.toLowerCase()}" data-address="${customer.address.toLowerCase()}">
-      <div class="flex justify-between items-center gap-md">
-        <div class="flex items-center gap-md" style="flex: 1;">
-          <div style="width: 60px; height: 60px; border-radius: var(--radius-md); background: var(--primary-gradient); display: flex; align-items: center; justify-content: center; font-size: 2rem;">
-            👤
+  container.innerHTML = customers.map(customer => {
+    // Get livestock emoji based on type
+    const getLivestockEmoji = (type) => {
+      if (!type) return '🐾';
+      const lowerType = type.toLowerCase();
+      if (lowerType.includes('ayam') && lowerType.includes('broiler')) return '🐔';
+      if (lowerType.includes('ayam') && lowerType.includes('layer')) return '🐓';
+      if (lowerType.includes('ayam') && (lowerType.includes('grower') || lowerType.includes('pullet'))) return '🐥';
+      if (lowerType.includes('ayam') && lowerType.includes('kampung')) return '🐤';
+      if (lowerType.includes('bebek')) return '🦆';
+      if (lowerType.includes('sapi') && lowerType.includes('potong')) return '🐄';
+      if (lowerType.includes('sapi') && lowerType.includes('perah')) return '🐮';
+      if (lowerType.includes('kambing')) return '🐐';
+      if (lowerType.includes('domba')) return '🐑';
+      if (lowerType.includes('babi')) return '🐷';
+      if (lowerType.includes('ikan')) return '🐟';
+      if (lowerType.includes('udang')) return '🦐';
+      return '🐾'; // Default for others
+    };
+
+    return `
+      <div class="card mb-md customer-item" data-name="${customer.name.toLowerCase()}" data-address="${customer.address.toLowerCase()}" data-livestock="${(customer.livestock_type || '').toLowerCase()}">
+        <div class="flex justify-between items-center gap-md">
+          <div class="flex items-center gap-md" style="flex: 1;">
+            <div style="width: 60px; height: 60px; border-radius: var(--radius-md); background: var(--primary-gradient); display: flex; align-items: center; justify-content: center; font-size: 2rem;">
+              ${getLivestockEmoji(customer.livestock_type)}
+            </div>
+            <div style="flex: 1;">
+              <h4 style="margin: 0; color: var(--text-primary);">${customer.name}</h4>
+              <p style="margin: 0.25rem 0; color: var(--text-secondary); font-size: 0.875rem;">
+                ${getLivestockEmoji(customer.livestock_type)} ${customer.livestock_type || '⚠️ Jenis ternak belum diisi'}
+                ${!customer.livestock_type ? '<span style="color: #f5576c; font-weight: 500;"> (Perlu diupdate)</span>' : ''}
+              </p>
+              <p style="margin: 0.25rem 0; color: var(--text-secondary); font-size: 0.875rem;">
+                📍 ${customer.address}
+              </p>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.875rem;">
+                📞 ${customer.phone || 'Tidak ada telepon'}
+              </p>
+            </div>
           </div>
-          <div style="flex: 1;">
-            <h4 style="margin: 0; color: var(--text-primary);">${customer.name}</h4>
-            <p style="margin: 0.25rem 0; color: var(--text-secondary); font-size: 0.875rem;">
-              📍 ${customer.address}
-            </p>
-            <p style="margin: 0; color: var(--text-muted); font-size: 0.875rem;">
-              📞 ${customer.phone || 'Tidak ada telepon'}
-            </p>
+          <div class="flex gap-sm">
+            <button class="btn btn-outline btn-icon" onclick="viewCustomer('${customer.id}')" title="Lihat Detail">
+              👁️
+            </button>
+            <button class="btn btn-outline btn-icon" onclick="editCustomer('${customer.id}')" title="Edit">
+              ✏️
+            </button>
           </div>
-        </div>
-        <div class="flex gap-sm">
-          <button class="btn btn-outline btn-icon" onclick="viewCustomer('${customer.id}')" title="Lihat Detail">
-            👁️
-          </button>
-          <button class="btn btn-outline btn-icon" onclick="editCustomer('${customer.id}')" title="Edit">
-            ✏️
-          </button>
         </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function filterCustomers(query) {
   const customers = state.getState('customers');
   const filtered = customers.filter(c =>
     c.name.toLowerCase().includes(query.toLowerCase()) ||
-    c.address.toLowerCase().includes(query.toLowerCase())
+    c.address.toLowerCase().includes(query.toLowerCase()) ||
+    (c.livestock_type && c.livestock_type.toLowerCase().includes(query.toLowerCase()))
   );
   renderCustomersList(filtered);
 }
@@ -191,6 +217,36 @@ export async function renderAddCustomerPage() {
                 id="email"
                 class="form-input"
                 placeholder="email@pelanggan.com"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="livestock-type">Jenis/Tipe Ternak *</label>
+              <select id="livestock-type" class="form-input" required>
+                <option value="">-- Pilih Jenis Ternak --</option>
+                <option value="ayam-broiler">🐔 Ayam Broiler (Pedaging)</option>
+                <option value="ayam-layer">🐓 Ayam Layer (Petelur)</option>
+                <option value="ayam-grower">🐥 Ayam Grower/Pullet</option>
+                <option value="ayam-kampung">🐤 Ayam Kampung</option>
+                <option value="bebek">🦆 Bebek</option>
+                <option value="sapi-potong">🐄 Sapi Potong</option>
+                <option value="sapi-perah">🐮 Sapi Perah</option>
+                <option value="kambing">🐐 Kambing</option>
+                <option value="domba">🐑 Domba</option>
+                <option value="babi">🐷 Babi</option>
+                <option value="ikan">🐟 Ikan (Budidaya)</option>
+                <option value="udang">🦐 Udang</option>
+                <option value="lainnya">🦜 Lainnya</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="other-livestock-group" style="display: none;">
+              <label class="form-label" for="other-livestock">Sebutkan Jenis Ternak Lainnya</label>
+              <input
+                type="text"
+                id="other-livestock"
+                class="form-input"
+                placeholder="Contoh: Burung Puyuh, Kelinci, dll"
               />
             </div>
 
@@ -303,6 +359,21 @@ function updateCoordinateInfo(lat, lng) {
 }
 
 function setupCustomerFormListeners() {
+  // Livestock type change handler
+  document.getElementById('livestock-type').addEventListener('change', (e) => {
+    const otherGroup = document.getElementById('other-livestock-group');
+    const otherInput = document.getElementById('other-livestock');
+    
+    if (e.target.value === 'lainnya') {
+      otherGroup.style.display = 'block';
+      otherInput.required = true;
+    } else {
+      otherGroup.style.display = 'none';
+      otherInput.required = false;
+      otherInput.value = '';
+    }
+  });
+
   // Use current location
   document.getElementById('use-current-location').addEventListener('click', async () => {
     const btn = document.getElementById('use-current-location');
@@ -345,6 +416,8 @@ async function handleAddCustomer(e) {
   const name = document.getElementById('name').value.trim();
   const phone = document.getElementById('phone').value.trim();
   const email = document.getElementById('email').value.trim();
+  const livestockType = document.getElementById('livestock-type').value;
+  const otherLivestock = document.getElementById('other-livestock').value.trim();
   const address = document.getElementById('address').value.trim();
   const notes = document.getElementById('notes').value.trim();
   const coordinateInfo = document.getElementById('coordinate-info');
@@ -353,6 +426,17 @@ async function handleAddCustomer(e) {
   if (!coordinateInfo.dataset.lat || !coordinateInfo.dataset.lng) {
     showNotification('Tentukan lokasi pelanggan pada peta', 'warning');
     return;
+  }
+
+  if (!livestockType) {
+    showNotification('Pilih jenis ternak pelanggan', 'warning');
+    return;
+  }
+
+  // Determine final livestock type
+  let finalLivestockType = livestockType;
+  if (livestockType === 'lainnya' && otherLivestock) {
+    finalLivestockType = otherLivestock;
   }
 
   // Loading State
@@ -372,6 +456,7 @@ async function handleAddCustomer(e) {
       name,
       phone: phone || null,
       email: email || null,
+      livestock_type: finalLivestockType,
       address,
       latitude: parseFloat(coordinateInfo.dataset.lat),
       longitude: parseFloat(coordinateInfo.dataset.lng),
@@ -501,6 +586,30 @@ window.viewCustomer = async (customerId) => {
                 <div style="font-weight: 500; color: #212529;">${customer.phone || 'Tidak ada nomor'}</div>
               </div>
             </div>
+            ${customer.livestock_type ? `
+              <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #dee2e6;">
+                <div style="color: #6c757d; font-size: 0.8rem;">🐾 JENIS TERNAK</div>
+                <div style="font-weight: 500; color: #212529; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 1.2rem;">${(() => {
+                    const type = customer.livestock_type.toLowerCase();
+                    if (type.includes('ayam') && type.includes('broiler')) return '🐔';
+                    if (type.includes('ayam') && type.includes('layer')) return '🐓';
+                    if (type.includes('ayam') && (type.includes('grower') || type.includes('pullet'))) return '🐥';
+                    if (type.includes('ayam') && type.includes('kampung')) return '🐤';
+                    if (type.includes('bebek')) return '🦆';
+                    if (type.includes('sapi') && type.includes('potong')) return '🐄';
+                    if (type.includes('sapi') && type.includes('perah')) return '🐮';
+                    if (type.includes('kambing')) return '🐐';
+                    if (type.includes('domba')) return '🐑';
+                    if (type.includes('babi')) return '🐷';
+                    if (type.includes('ikan')) return '🐟';
+                    if (type.includes('udang')) return '🦐';
+                    return '🐾';
+                  })()}</span>
+                  <span>${customer.livestock_type}</span>
+                </div>
+              </div>
+            ` : ''}
           </div>
 
           <!-- Location Info -->
@@ -607,6 +716,7 @@ window.viewCustomer = async (customerId) => {
         { label: 'Tutup', action: 'close', type: 'outline' },
         { label: '📞 Telepon', action: 'call', type: 'outline', hidden: !customer.phone },
         { label: '🗺️ Buka Maps', action: 'maps', type: 'outline' },
+        { label: '✏️ Edit Data Ternak', action: 'edit-livestock', type: 'warning', hidden: false },
         { label: '📍 Catat Kunjungan', action: 'visit', type: 'primary' }
       ].filter(btn => !btn.hidden)
     );
@@ -621,6 +731,8 @@ window.viewCustomer = async (customerId) => {
     } else if (action === 'maps') {
       const mapsUrl = `https://www.google.com/maps?q=${customer.latitude},${customer.longitude}`;
       window.open(mapsUrl, '_blank');
+    } else if (action === 'edit-livestock') {
+      await handleEditLivestockType(customer);
     }
 
   } catch (error) {
@@ -629,6 +741,174 @@ window.viewCustomer = async (customerId) => {
     showNotification(error.message || 'Gagal memuat detail pelanggan', 'danger');
   }
 };
+
+async function handleEditLivestockType(customer) {
+  const modalId = 'edit-livestock-modal-' + Date.now();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = modalId;
+  
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">🐾 Update Data Ternak</h3>
+        <button class="modal-close" onclick="document.getElementById('${modalId}').remove()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-md" style="background: #e3f2fd; padding: 1rem; border-radius: 8px;">
+          <div style="font-weight: 600; color: #1976d2; margin-bottom: 0.5rem;">📍 ${customer.name}</div>
+          <div style="font-size: 0.9rem; color: #666;">
+            ${customer.address}
+          </div>
+        </div>
+        
+        <form id="edit-livestock-form">
+          <div class="form-group">
+            <label class="form-label">Jenis/Tipe Ternak *</label>
+            <select id="edit-livestock-type" class="form-input" required>
+              <option value="">-- Pilih Jenis Ternak --</option>
+              <option value="ayam-broiler">🐔 Ayam Broiler (Pedaging)</option>
+              <option value="ayam-layer">🐓 Ayam Layer (Petelur)</option>
+              <option value="ayam-grower">🐥 Ayam Grower/Pullet</option>
+              <option value="ayam-kampung">🐤 Ayam Kampung</option>
+              <option value="bebek">🦆 Bebek</option>
+              <option value="sapi-potong">🐄 Sapi Potong</option>
+              <option value="sapi-perah">🐮 Sapi Perah</option>
+              <option value="kambing">🐐 Kambing</option>
+              <option value="domba">🐑 Domba</option>
+              <option value="babi">🐷 Babi</option>
+              <option value="ikan">🐟 Ikan (Budidaya)</option>
+              <option value="udang">🦐 Udang</option>
+              <option value="lainnya">🦜 Lainnya</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="edit-other-livestock-group" style="display: none;">
+            <label class="form-label">Sebutkan Jenis Ternak Lainnya</label>
+            <input
+              type="text"
+              id="edit-other-livestock"
+              class="form-input"
+              placeholder="Contoh: Burung Puyuh, Kelinci, dll"
+            />
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Catatan Tambahan (Opsional)</label>
+            <textarea
+              id="edit-livestock-notes"
+              class="form-textarea"
+              rows="2"
+              placeholder="Informasi tambahan tentang ternak..."
+            ></textarea>
+          </div>
+          
+          <div class="modal-footer" style="padding: 0; margin-top: 1.5rem; border: none;">
+            <button type="button" class="btn btn-outline" onclick="document.getElementById('${modalId}').remove()">Batal</button>
+            <button type="submit" class="btn btn-primary" id="btn-update-livestock">✅ Update Data</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // Set current value if exists
+  const livestockSelect = document.getElementById('edit-livestock-type');
+  if (customer.livestock_type) {
+    // Try to match existing value with dropdown options
+    const options = livestockSelect.options;
+    let matched = false;
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].value === customer.livestock_type || 
+          options[i].text.toLowerCase().includes(customer.livestock_type.toLowerCase())) {
+        livestockSelect.value = options[i].value;
+        matched = true;
+        break;
+      }
+    }
+    
+    // If no match found, set to "lainnya" and fill the custom field
+    if (!matched) {
+      livestockSelect.value = 'lainnya';
+      document.getElementById('edit-other-livestock-group').style.display = 'block';
+      document.getElementById('edit-other-livestock').value = customer.livestock_type;
+      document.getElementById('edit-other-livestock').required = true;
+    }
+  }
+
+  // Handle livestock type change
+  livestockSelect.addEventListener('change', (e) => {
+    const otherGroup = document.getElementById('edit-other-livestock-group');
+    const otherInput = document.getElementById('edit-other-livestock');
+    
+    if (e.target.value === 'lainnya') {
+      otherGroup.style.display = 'block';
+      otherInput.required = true;
+    } else {
+      otherGroup.style.display = 'none';
+      otherInput.required = false;
+      otherInput.value = '';
+    }
+  });
+
+  // Handle form submission
+  const form = overlay.querySelector('#edit-livestock-form');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const livestockType = document.getElementById('edit-livestock-type').value;
+    const otherLivestock = document.getElementById('edit-other-livestock').value.trim();
+    const notes = document.getElementById('edit-livestock-notes').value.trim();
+    const btn = document.getElementById('btn-update-livestock');
+
+    if (!livestockType) {
+      showNotification('Pilih jenis ternak', 'warning');
+      return;
+    }
+
+    // Determine final livestock type
+    let finalLivestockType = livestockType;
+    if (livestockType === 'lainnya' && otherLivestock) {
+      finalLivestockType = otherLivestock;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Menyimpan...';
+    showLoading('Mengupdate data ternak...');
+
+    try {
+      // Update customer livestock type
+      const { error } = await db.supabase
+        .from('customers')
+        .update({ 
+          livestock_type: finalLivestockType,
+          notes: notes || customer.notes // Keep existing notes if no new notes
+        })
+        .eq('id', customer.id);
+
+      if (error) throw error;
+
+      hideLoading();
+      overlay.remove();
+      showNotification('✅ Data ternak berhasil diupdate!', 'success');
+      
+      // Refresh customer list if we're on the customers page
+      if (window.location.hash.includes('pelanggan')) {
+        setTimeout(() => {
+          loadCustomers();
+        }, 1000);
+      }
+
+    } catch (err) {
+      hideLoading();
+      btn.disabled = false;
+      btn.innerHTML = '✅ Update Data';
+      showNotification(err.message || 'Gagal mengupdate data ternak', 'danger');
+    }
+  });
+}
 
 async function handleLogVisit(customer) {
   showLoading('Mendapatkan lokasi Anda...');

@@ -69,8 +69,6 @@ export function renderLoginPage() {
             </div>
           </div>
         </div>
-        
-        ${versionManager.renderVersionFooter()}
       </div>
     </div>
   `;
