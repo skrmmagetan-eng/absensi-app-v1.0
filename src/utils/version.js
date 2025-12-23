@@ -1,8 +1,9 @@
 // Version Management and Update Notification System
 
-const APP_VERSION = '1.4.0-clean-' + Date.now(); // Removed admin-customers.js safely
+const APP_VERSION = '1.4.0-clean'; // Fixed version without timestamp
 const VERSION_KEY = 'app_version';
 const UPDATE_DISMISSED_KEY = 'update_dismissed';
+const LAST_NOTIFICATION_KEY = 'last_notification_time';
 
 export const versionManager = {
   getCurrentVersion() {
@@ -36,17 +37,31 @@ export const versionManager = {
 
   dismissUpdate() {
     localStorage.setItem(UPDATE_DISMISSED_KEY, this.getCurrentVersion());
+    localStorage.setItem(LAST_NOTIFICATION_KEY, Date.now().toString());
   },
 
   isUpdateDismissed() {
     return localStorage.getItem(UPDATE_DISMISSED_KEY) === this.getCurrentVersion();
   },
 
+  shouldShowNotification() {
+    const lastNotification = localStorage.getItem(LAST_NOTIFICATION_KEY);
+    const now = Date.now();
+    
+    // Don't show notification if shown within last 5 minutes
+    if (lastNotification && (now - parseInt(lastNotification)) < 5 * 60 * 1000) {
+      return false;
+    }
+    
+    return true;
+  },
+
   showUpdateNotification() {
     const updateCheck = this.checkForUpdate();
     
-    if (updateCheck.hasUpdate && !this.isUpdateDismissed()) {
+    if (updateCheck.hasUpdate && !this.isUpdateDismissed() && this.shouldShowNotification()) {
       this.displayUpdateBanner(updateCheck.oldVersion, updateCheck.newVersion);
+      localStorage.setItem(LAST_NOTIFICATION_KEY, Date.now().toString());
     }
   },
 
@@ -113,6 +128,8 @@ export const versionManager = {
     // Event listeners
     document.getElementById('update-reload-btn').addEventListener('click', () => {
       this.setStoredVersion(newVersion);
+      localStorage.removeItem(UPDATE_DISMISSED_KEY);
+      localStorage.removeItem(LAST_NOTIFICATION_KEY);
       window.location.reload();
     });
 
@@ -121,13 +138,13 @@ export const versionManager = {
       banner.remove();
     });
 
-    // Auto dismiss after 10 seconds
+    // Auto dismiss after 15 seconds
     setTimeout(() => {
       if (document.getElementById('update-banner')) {
         this.dismissUpdate();
         banner.remove();
       }
-    }, 10000);
+    }, 15000);
   },
 
   renderVersionFooter() {

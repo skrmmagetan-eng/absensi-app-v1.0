@@ -493,14 +493,21 @@ if ('serviceWorker' in navigator) {
 }
 
 function showUpdateNotification(worker) {
+  // Check if there's already a PWA update notification
+  const existingToast = document.querySelector('.update-toast');
+  if (existingToast) existingToast.remove();
+
   // Create a toast/notification
   const toast = document.createElement('div');
   toast.className = 'update-toast';
   toast.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
-            <span>✨ Aplikasi versi baru tersedia</span>
+            <span>🔄 PWA Update tersedia</span>
             <button id="reload-btn" class="btn btn-small btn-primary" style="padding: 4px 10px; font-size: 0.8rem;">
-               Update Sekarang
+               Update PWA
+            </button>
+            <button id="dismiss-pwa-btn" class="btn btn-small btn-outline" style="padding: 4px 8px; font-size: 0.8rem;">
+               ✕
             </button>
         </div>
     `;
@@ -526,6 +533,17 @@ function showUpdateNotification(worker) {
     // Send skipWaiting message to the new worker
     worker.postMessage({ action: 'skipWaiting' });
     toast.remove();
-    showLoading && showLoading('Mengupdate aplikasi...');
+    showLoading && showLoading('Mengupdate PWA...');
   });
+
+  document.getElementById('dismiss-pwa-btn').addEventListener('click', () => {
+    toast.remove();
+  });
+
+  // Auto dismiss after 30 seconds
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.remove();
+    }
+  }, 30000);
 }
