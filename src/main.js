@@ -287,6 +287,7 @@ const routes = {
   'admin/katalog': renderAdminCatalogPage,
   'admin/orders': renderAdminOrdersPage,
   'admin/histori': renderAdminHistoryPage,
+  'admin/pelanggan': renderCustomersPage, // Admin view for customers
   'check-in': renderCheckInPage,
 
 

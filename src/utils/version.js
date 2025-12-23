@@ -1,6 +1,6 @@
 // Version Management and Update Notification System
 
-const APP_VERSION = '1.4.1-stats-integrated'; // Fixed stats grid integration
+const APP_VERSION = '2.1.0-livestock-tracking'; // Added livestock population & feed tracking
 const VERSION_KEY = 'app_version';
 const UPDATE_DISMISSED_KEY = 'update_dismissed';
 const LAST_NOTIFICATION_KEY = 'last_notification_time';
@@ -80,45 +80,55 @@ export const versionManager = {
         transform: translateX(-50%);
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        padding: 16px 24px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
         z-index: 9999;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 16px;
         max-width: 90%;
-        animation: slideDown 0.3s ease-out;
+        animation: slideDown 0.4s ease-out;
+        backdrop-filter: blur(10px);
       ">
-        <span style="font-size: 1.5rem;">🎉</span>
+        <span style="font-size: 2rem;">🐄</span>
         <div style="flex: 1;">
-          <div style="font-weight: 600; font-size: 14px;">Aplikasi Diperbarui!</div>
-          <div style="font-size: 12px; opacity: 0.9;">v${oldVersion} → v${newVersion}</div>
+          <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px;">Fitur Baru Tersedia!</div>
+          <div style="font-size: 13px; opacity: 0.95; margin-bottom: 2px;">📊 Tracking Populasi & Pakan Ternak</div>
+          <div style="font-size: 11px; opacity: 0.8;">v${oldVersion} → v${newVersion}</div>
         </div>
-        <button id="update-reload-btn" style="
-          background: white;
-          color: #667eea;
-          border: none;
-          padding: 6px 12px;
-          border-radius: 6px;
-          font-weight: 600;
-          font-size: 12px;
-          cursor: pointer;
-        ">Muat Ulang</button>
-        <button id="update-dismiss-btn" style="
-          background: transparent;
-          color: white;
-          border: 1px solid rgba(255,255,255,0.5);
-          padding: 6px 12px;
-          border-radius: 6px;
-          font-size: 12px;
-          cursor: pointer;
-        ">Nanti</button>
+        <div style="display: flex; gap: 8px;">
+          <button id="update-reload-btn" style="
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+          " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            🚀 Update Sekarang
+          </button>
+          <button id="update-dismiss-btn" style="
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.6);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+          " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+            Nanti Saja
+          </button>
+        </div>
       </div>
       <style>
         @keyframes slideDown {
-          from { opacity: 0; transform: translate(-50%, -20px); }
-          to { opacity: 1; transform: translate(-50%, 0); }
+          from { opacity: 0; transform: translate(-50%, -30px) scale(0.9); }
+          to { opacity: 1; transform: translate(-50%, 0) scale(1); }
         }
       </style>
     `;
@@ -130,21 +140,31 @@ export const versionManager = {
       this.setStoredVersion(newVersion);
       localStorage.removeItem(UPDATE_DISMISSED_KEY);
       localStorage.removeItem(LAST_NOTIFICATION_KEY);
-      window.location.reload();
+      
+      // Show loading indicator
+      const btn = document.getElementById('update-reload-btn');
+      btn.innerHTML = '⏳ Memuat...';
+      btn.disabled = true;
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     });
 
     document.getElementById('update-dismiss-btn').addEventListener('click', () => {
       this.dismissUpdate();
-      banner.remove();
+      banner.style.animation = 'slideUp 0.3s ease-in forwards';
+      setTimeout(() => banner.remove(), 300);
     });
 
-    // Auto dismiss after 15 seconds
+    // Auto dismiss after 20 seconds
     setTimeout(() => {
       if (document.getElementById('update-banner')) {
         this.dismissUpdate();
-        banner.remove();
+        banner.style.animation = 'slideUp 0.3s ease-in forwards';
+        setTimeout(() => banner.remove(), 300);
       }
-    }, 15000);
+    }, 20000);
   },
 
   renderVersionFooter() {

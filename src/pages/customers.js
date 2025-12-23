@@ -61,29 +61,49 @@ export async function renderCustomersPage() {
 
 async function loadCustomers() {
   const user = state.getState('user');
+  const profile = state.getState('profile');
   const container = document.getElementById('customers-container');
 
   showLoading('Memuat data pelanggan...');
 
   try {
-    const { data: customers, error } = await db.getCustomers(user.id);
+    // Admin dan Manager melihat semua pelanggan, Employee hanya melihat pelanggan mereka sendiri
+    const isAdminOrManager = profile?.role === 'admin' || profile?.role === 'manager';
+    const { data: customers, error } = await db.getCustomers(isAdminOrManager ? null : user.id);
 
     hideLoading();
 
     if (error) throw error;
 
     if (!customers || customers.length === 0) {
+      const isAdminOrManager = profile?.role === 'admin' || profile?.role === 'manager';
       container.innerHTML = `
         <div class="card text-center" style="padding: 3rem;">
           <div style="font-size: 4rem; margin-bottom: 1rem;">📭</div>
           <h3>Belum Ada Pelanggan</h3>
           <p style="color: var(--text-muted); margin-bottom: 2rem;">
-            Mulai tambahkan pelanggan untuk memulai kunjungan
+            ${isAdminOrManager 
+              ? 'Belum ada pelanggan yang didaftarkan oleh karyawan. Instruksikan karyawan untuk menambahkan pelanggan.' 
+              : 'Mulai tambahkan pelanggan untuk memulai kunjungan'
+            }
           </p>
-          <button class="btn btn-primary" onclick="window.location.hash='#pelanggan/tambah'">
-            <span>➕</span>
-            <span>Tambah Pelanggan Pertama</span>
-          </button>
+          ${!isAdminOrManager ? `
+            <button class="btn btn-primary" onclick="window.location.hash='#pelanggan/tambah'">
+              <span>➕</span>
+              <span>Tambah Pelanggan Pertama</span>
+            </button>
+          ` : `
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+              <button class="btn btn-outline" onclick="window.location.hash='#admin/karyawan'">
+                <span>👥</span>
+                <span>Kelola Karyawan</span>
+              </button>
+              <button class="btn btn-primary" onclick="window.location.hash='#pelanggan/tambah'">
+                <span>➕</span>
+                <span>Tambah Pelanggan</span>
+              </button>
+            </div>
+          `}
         </div>
       `;
       return;
@@ -95,12 +115,53 @@ async function loadCustomers() {
   } catch (error) {
     hideLoading();
     console.error('Error loading customers:', error);
-    showNotification('Gagal memuat data pelanggan', 'danger');
+    
+    // Detailed error handling
+    let errorMessage = 'Gagal memuat data pelanggan';
+    let errorDetails = '';
+    
+    if (error.message.includes('relation "customers" does not exist')) {
+      errorMessage = 'Tabel pelanggan belum dibuat';
+      errorDetails = 'Silakan jalankan setup database terlebih dahulu';
+    } else if (error.message.includes('permission denied') || error.message.includes('policy')) {
+      errorMessage = 'Akses ditolak ke data pelanggan';
+      errorDetails = 'Periksa permissions atau hubungi administrator';
+    } else if (error.message.includes('network') || error.message.includes('fetch')) {
+      errorMessage = 'Koneksi database bermasalah';
+      errorDetails = 'Periksa koneksi internet atau konfigurasi database';
+    }
+    
+    // Show detailed error in UI
+    container.innerHTML = `
+      <div class="card text-center" style="padding: 3rem;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">⚠️</div>
+        <h3 style="color: var(--danger);">${errorMessage}</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1rem;">${errorDetails}</p>
+        <details style="margin: 1rem 0; text-align: left;">
+          <summary style="cursor: pointer; color: var(--text-secondary);">Detail Error (untuk developer)</summary>
+          <pre style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-top: 0.5rem; font-size: 0.875rem; overflow-x: auto;">${error.message}</pre>
+        </details>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+          <button class="btn btn-outline" onclick="window.location.reload()">
+            <span>🔄</span>
+            <span>Coba Lagi</span>
+          </button>
+          <button class="btn btn-primary" onclick="window.location.hash='#dashboard'">
+            <span>🏠</span>
+            <span>Kembali ke Dashboard</span>
+          </button>
+        </div>
+      </div>
+    `;
+    
+    showNotification(errorMessage, 'danger');
   }
 }
 
 function renderCustomersList(customers) {
   const container = document.getElementById('customers-container');
+  const profile = state.getState('profile');
+  const isAdminOrManager = profile?.role === 'admin' || profile?.role === 'manager';
 
   container.innerHTML = customers.map(customer => {
     // Get livestock emoji based on type
@@ -138,14 +199,33 @@ function renderCustomersList(customers) {
               <p style="margin: 0.25rem 0; color: var(--text-secondary); font-size: 0.875rem;">
                 📍 ${customer.address}
               </p>
-              <p style="margin: 0; color: var(--text-muted); font-size: 0.875rem;">
+              <p style="margin: 0.25rem 0; color: var(--text-muted); font-size: 0.875rem;">
                 📞 ${customer.phone || 'Tidak ada telepon'}
               </p>
+              ${customer.population_count ? `
+                <p style="margin: 0.25rem 0; color: var(--success); font-size: 0.875rem;">
+                  🐄 ${customer.population_count} ${customer.population_unit || 'ekor'}
+                  ${customer.feed_type ? `• 🌾 ${customer.feed_type}` : ''}
+                  ${customer.daily_feed_consumption ? `• ${customer.daily_feed_consumption} ${customer.feed_unit || 'kg'}/hari` : ''}
+                </p>
+              ` : `
+                <p style="margin: 0.25rem 0; color: var(--warning); font-size: 0.875rem;">
+                  ⚠️ Data populasi & pakan belum diisi
+                </p>
+              `}
+              ${isAdminOrManager && customer.users ? `
+                <p style="margin: 0; color: var(--primary); font-size: 0.875rem; font-weight: 500;">
+                  👤 Didaftarkan oleh: ${customer.users.name || 'Unknown'}
+                </p>
+              ` : ''}
             </div>
           </div>
           <div class="flex gap-sm">
             <button class="btn btn-outline btn-icon" onclick="viewCustomer('${customer.id}')" title="Lihat Detail">
               👁️
+            </button>
+            <button class="btn btn-outline btn-icon" onclick="updatePopulationFeed('${customer.id}')" title="Update Populasi & Pakan">
+              🐄
             </button>
             <button class="btn btn-outline btn-icon" onclick="editCustomer('${customer.id}')" title="Edit">
               ✏️
@@ -248,6 +328,74 @@ export async function renderAddCustomerPage() {
                 class="form-input"
                 placeholder="Contoh: Burung Puyuh, Kelinci, dll"
               />
+            </div>
+
+            <!-- Population & Feed Section -->
+            <div class="form-section" style="background: var(--bg-secondary); padding: 1.5rem; border-radius: var(--radius-md); margin: 1.5rem 0;">
+              <h3 style="margin: 0 0 1rem 0; color: var(--text-primary); font-size: 1.1rem;">
+                🐄 Data Populasi & Pakan
+              </h3>
+              
+              <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label" for="population-count">Jumlah Ternak *</label>
+                  <input
+                    type="number"
+                    id="population-count"
+                    class="form-input"
+                    placeholder="100"
+                    min="0"
+                    required
+                  />
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label" for="population-unit">Satuan</label>
+                  <select id="population-unit" class="form-input">
+                    <option value="ekor">Ekor</option>
+                    <option value="kg">Kg</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="feed-type">Jenis Pakan</label>
+                <input
+                  type="text"
+                  id="feed-type"
+                  class="form-input"
+                  placeholder="Contoh: Pakan Starter, Grower, Finisher"
+                />
+              </div>
+
+              <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label" for="feed-brand">Merek/Supplier Pakan</label>
+                  <input
+                    type="text"
+                    id="feed-brand"
+                    class="form-input"
+                    placeholder="Contoh: Charoen Pokphand, Japfa"
+                  />
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label" for="daily-consumption">Konsumsi Harian</label>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <input
+                      type="number"
+                      id="daily-consumption"
+                      class="form-input"
+                      placeholder="50"
+                      min="0"
+                      step="0.1"
+                      style="flex: 1;"
+                    />
+                    <select id="feed-unit" class="form-input" style="width: 80px;">
+                      <option value="kg">Kg</option>
+                      <option value="sak">Sak</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="form-group">
@@ -420,6 +568,15 @@ async function handleAddCustomer(e) {
   const otherLivestock = document.getElementById('other-livestock').value.trim();
   const address = document.getElementById('address').value.trim();
   const notes = document.getElementById('notes').value.trim();
+  
+  // Population & Feed data
+  const populationCount = parseInt(document.getElementById('population-count').value) || 0;
+  const populationUnit = document.getElementById('population-unit').value;
+  const feedType = document.getElementById('feed-type').value.trim();
+  const feedBrand = document.getElementById('feed-brand').value.trim();
+  const dailyConsumption = parseFloat(document.getElementById('daily-consumption').value) || 0;
+  const feedUnit = document.getElementById('feed-unit').value;
+  
   const coordinateInfo = document.getElementById('coordinate-info');
   const user = state.getState('user');
 
@@ -468,6 +625,13 @@ async function handleAddCustomer(e) {
       latitude: parseFloat(coordinateInfo.dataset.lat),
       longitude: parseFloat(coordinateInfo.dataset.lng),
       notes: notes?.trim() || null,
+      // Population & Feed data
+      population_count: populationCount,
+      population_unit: populationUnit,
+      feed_type: feedType || null,
+      feed_brand: feedBrand || null,
+      daily_feed_consumption: dailyConsumption,
+      feed_unit: feedUnit,
       created_at: new Date().toISOString()
     };
 
@@ -1068,5 +1232,209 @@ window.deleteCustomer = async (customerId, customerName) => {
       console.error('Error deleting customer:', error);
       showNotification('Gagal menghapus pelanggan', 'danger');
     }
+  }
+};
+
+// Update Population & Feed Function
+window.updatePopulationFeed = async (customerId) => {
+  console.log('🐄 Opening population & feed update for customer ID:', customerId);
+  
+  if (!customerId) {
+    console.error('❌ No customer ID provided');
+    showNotification('ID pelanggan tidak valid', 'danger');
+    return;
+  }
+
+  showLoading('Memuat data pelanggan...');
+
+  try {
+    // Get customer data
+    const { data: customer, error } = await db.getCustomerById(customerId);
+    
+    if (error) {
+      console.error('❌ Error loading customer:', error);
+      throw new Error(`Gagal memuat data pelanggan: ${error.message}`);
+    }
+
+    if (!customer) {
+      console.error('❌ Customer not found');
+      throw new Error('Pelanggan tidak ditemukan');
+    }
+
+    hideLoading();
+
+    const modalId = 'update-population-feed-modal-' + Date.now();
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = modalId;
+    
+    overlay.innerHTML = `
+      <div class="modal" style="max-width: 600px;">
+        <div class="modal-header">
+          <h3 class="modal-title">🐄 Update Populasi & Pakan</h3>
+          <button class="modal-close" onclick="document.getElementById('${modalId}').remove()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-md" style="background: #e3f2fd; padding: 1rem; border-radius: 8px;">
+            <div style="font-weight: 600; color: #1976d2; margin-bottom: 0.5rem;">📍 ${customer.name}</div>
+            <div style="font-size: 0.9rem; color: #666;">
+              ${customer.livestock_type} • ${customer.address}
+            </div>
+          </div>
+          
+          <form id="update-population-feed-form">
+            <!-- Population Section -->
+            <div class="form-section" style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+              <h4 style="margin: 0 0 1rem 0; color: var(--text-primary);">🐄 Data Populasi</h4>
+              <div class="form-row" style="display: grid; grid-template-columns: 1fr auto; gap: 1rem;">
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label">Jumlah Ternak</label>
+                  <input
+                    type="number"
+                    id="update-population-count"
+                    class="form-input"
+                    value="${customer.population_count || ''}"
+                    min="0"
+                  />
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label">Satuan</label>
+                  <select id="update-population-unit" class="form-input">
+                    <option value="ekor" ${customer.population_unit === 'ekor' ? 'selected' : ''}>Ekor</option>
+                    <option value="kg" ${customer.population_unit === 'kg' ? 'selected' : ''}>Kg</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feed Section -->
+            <div class="form-section" style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+              <h4 style="margin: 0 0 1rem 0; color: var(--text-primary);">🌾 Data Pakan</h4>
+              <div class="form-group">
+                <label class="form-label">Jenis Pakan</label>
+                <input
+                  type="text"
+                  id="update-feed-type"
+                  class="form-input"
+                  value="${customer.feed_type || ''}"
+                  placeholder="Contoh: Pakan Starter, Grower, Finisher"
+                />
+              </div>
+              <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label">Merek/Supplier</label>
+                  <input
+                    type="text"
+                    id="update-feed-brand"
+                    class="form-input"
+                    value="${customer.feed_brand || ''}"
+                    placeholder="Contoh: Charoen Pokphand"
+                  />
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label class="form-label">Konsumsi Harian</label>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <input
+                      type="number"
+                      id="update-daily-consumption"
+                      class="form-input"
+                      value="${customer.daily_feed_consumption || ''}"
+                      min="0"
+                      step="0.1"
+                      style="flex: 1;"
+                    />
+                    <select id="update-feed-unit" class="form-input" style="width: 80px;">
+                      <option value="kg" ${customer.feed_unit === 'kg' ? 'selected' : ''}>Kg</option>
+                      <option value="sak" ${customer.feed_unit === 'sak' ? 'selected' : ''}>Sak</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Catatan Update (Opsional)</label>
+              <textarea
+                id="update-notes"
+                class="form-textarea"
+                rows="2"
+                placeholder="Alasan perubahan atau catatan tambahan..."
+              ></textarea>
+            </div>
+            
+            <div class="modal-footer" style="padding: 0; margin-top: 1.5rem; border: none;">
+              <button type="button" class="btn btn-outline" onclick="document.getElementById('${modalId}').remove()">Batal</button>
+              <button type="submit" class="btn btn-primary" id="btn-update-population-feed">✅ Update Data</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Handle form submission
+    const form = overlay.querySelector('#update-population-feed-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const populationCount = parseInt(document.getElementById('update-population-count').value) || 0;
+      const populationUnit = document.getElementById('update-population-unit').value;
+      const feedType = document.getElementById('update-feed-type').value.trim();
+      const feedBrand = document.getElementById('update-feed-brand').value.trim();
+      const dailyConsumption = parseFloat(document.getElementById('update-daily-consumption').value) || 0;
+      const feedUnit = document.getElementById('update-feed-unit').value;
+      const notes = document.getElementById('update-notes').value.trim();
+      const btn = document.getElementById('btn-update-population-feed');
+
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Menyimpan...';
+      showLoading('Mengupdate data populasi & pakan...');
+
+      try {
+        // Update population if changed
+        if (populationCount !== (customer.population_count || 0) || populationUnit !== customer.population_unit) {
+          await db.updatePopulation(customerId, {
+            count: populationCount,
+            unit: populationUnit,
+            notes: notes
+          });
+        }
+
+        // Update feed if changed
+        if (feedType !== (customer.feed_type || '') || 
+            feedBrand !== (customer.feed_brand || '') || 
+            dailyConsumption !== (customer.daily_feed_consumption || 0) ||
+            feedUnit !== customer.feed_unit) {
+          await db.updateFeed(customerId, {
+            type: feedType,
+            brand: feedBrand,
+            consumption: dailyConsumption,
+            unit: feedUnit,
+            notes: notes
+          });
+        }
+
+        hideLoading();
+        overlay.remove();
+        showNotification('✅ Data populasi & pakan berhasil diupdate!', 'success');
+        
+        // Refresh customer list
+        setTimeout(() => {
+          loadCustomers();
+        }, 1000);
+
+      } catch (err) {
+        hideLoading();
+        btn.disabled = false;
+        btn.innerHTML = '✅ Update Data';
+        showNotification(err.message || 'Gagal mengupdate data populasi & pakan', 'danger');
+      }
+    });
+
+  } catch (error) {
+    hideLoading();
+    console.error('❌ Error in updatePopulationFeed:', error);
+    showNotification(error.message || 'Gagal memuat data pelanggan', 'danger');
   }
 };

@@ -110,7 +110,7 @@ export const db = {
     async getCustomers(userId = null) {
         let query = supabase
             .from('customers')
-            .select('*, users(name)')
+            .select('*, users!customers_employee_id_fkey(name)')
             .order('created_at', { ascending: false });
 
         if (userId) {
@@ -172,6 +172,126 @@ export const db = {
             .delete()
             .eq('id', customerId);
         return { error };
+    },
+
+    // Livestock Population & Feed Tracking
+    async updatePopulation(customerId, populationData) {
+        const user = await auth.getUser();
+        
+        // Get current population data
+        const { data: currentCustomer } = await supabase
+            .from('customers')
+            .select('population_count, population_unit')
+            .eq('id', customerId)
+            .single();
+
+        // Update customer population
+        const { data, error } = await supabase
+            .from('customers')
+            .update({
+                population_count: populationData.count,
+                population_unit: populationData.unit,
+                last_population_update: new Date().toISOString()
+            })
+            .eq('id', customerId)
+            .select()
+            .single();
+
+        if (!error && currentCustomer) {
+            // Log the population update
+            await supabase.rpc('log_population_update', {
+                p_customer_id: customerId,
+                p_employee_id: user.id,
+                p_old_count: currentCustomer.population_count || 0,
+                p_new_count: populationData.count,
+                p_unit: populationData.unit,
+                p_notes: populationData.notes || null,
+                p_visit_id: populationData.visit_id || null
+            });
+        }
+
+        return { data, error };
+    },
+
+    async updateFeed(customerId, feedData) {
+        const user = await auth.getUser();
+        
+        // Get current feed data
+        const { data: currentCustomer } = await supabase
+            .from('customers')
+            .select('feed_type, feed_brand, daily_feed_consumption, feed_unit')
+            .eq('id', customerId)
+            .single();
+
+        // Update customer feed
+        const { data, error } = await supabase
+            .from('customers')
+            .update({
+                feed_type: feedData.type,
+                feed_brand: feedData.brand,
+                daily_feed_consumption: feedData.consumption,
+                feed_unit: feedData.unit,
+                last_feed_update: new Date().toISOString()
+            })
+            .eq('id', customerId)
+            .select()
+            .single();
+
+        if (!error && currentCustomer) {
+            // Log the feed update
+            await supabase.rpc('log_feed_update', {
+                p_customer_id: customerId,
+                p_employee_id: user.id,
+                p_old_type: currentCustomer.feed_type || '',
+                p_new_type: feedData.type,
+                p_old_brand: currentCustomer.feed_brand || '',
+                p_new_brand: feedData.brand,
+                p_old_consumption: currentCustomer.daily_feed_consumption || 0,
+                p_new_consumption: feedData.consumption,
+                p_unit: feedData.unit,
+                p_notes: feedData.notes || null,
+                p_visit_id: feedData.visit_id || null
+            });
+        }
+
+        return { data, error };
+    },
+
+    async getLivestockUpdates(customerId = null, employeeId = null, limit = 50) {
+        let query = supabase
+            .from('livestock_updates')
+            .select(`
+                *,
+                customers(name, livestock_type),
+                users!livestock_updates_employee_id_fkey(name)
+            `)
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+        if (customerId) {
+            query = query.eq('customer_id', customerId);
+        }
+
+        if (employeeId) {
+            query = query.eq('employee_id', employeeId);
+        }
+
+        const { data, error } = await query;
+        return { data, error };
+    },
+
+    async getCustomerLivestockSummary(customerId = null) {
+        let query = supabase
+            .from('customer_livestock_summary')
+            .select('*')
+            .order('name');
+
+        if (customerId) {
+            query = query.eq('id', customerId);
+        }
+
+        const { data, error } = await query;
+        return { data, error };
     },
 
     // Attendance
@@ -240,7 +360,7 @@ export const db = {
 
         let query = supabase
             .from('attendance')
-            .select('*, customers(*), users(name, email)')
+            .select('*, customers(*), users!attendance_employee_id_fkey(name, email)')
             .order('check_in_time', { ascending: false });
 
         if (employeeId) {
@@ -323,7 +443,7 @@ export const db = {
 
         let query = supabase
             .from('orders')
-            .select('*, customers(*), users(name, email)')
+            .select('*, customers(*), users!orders_employee_id_fkey(name, email)')
             .order('created_at', { ascending: false });
 
         if (userId) {
@@ -666,7 +786,7 @@ export const db = {
             // Recent orders
             let orderQuery = supabase
                 .from('orders')
-                .select('id, total_amount, status, created_at, customers(name), users(name)')
+                .select('id, total_amount, status, created_at, customers(name), users!orders_employee_id_fkey(name)')
                 .order('created_at', { ascending: false })
                 .limit(limit);
             
@@ -678,7 +798,7 @@ export const db = {
             // Recent visits
             let visitQuery = supabase
                 .from('attendance')
-                .select('id, check_in_time, notes, customers(name), users(name)')
+                .select('id, check_in_time, notes, customers(name), users!attendance_employee_id_fkey(name)')
                 .order('check_in_time', { ascending: false })
                 .limit(limit);
             
