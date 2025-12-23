@@ -451,16 +451,24 @@ async function handleAddCustomer(e) {
   showLoading('Menyimpan data pelanggan...');
 
   try {
+    // Ensure livestock_type is properly formatted for consistency
+    let finalLivestockType = livestockType;
+    if (livestockType === 'lainnya') {
+      const otherType = document.getElementById('other-livestock').value.trim();
+      finalLivestockType = otherType || 'Lainnya';
+    }
+
     const customerData = {
       employee_id: user.id,
-      name,
-      phone: phone || null,
-      email: email || null,
+      name: name.trim(),
+      phone: phone?.trim() || null,
+      email: email?.trim() || null,
       livestock_type: finalLivestockType,
-      address,
+      address: address.trim(),
       latitude: parseFloat(coordinateInfo.dataset.lat),
       longitude: parseFloat(coordinateInfo.dataset.lng),
-      notes: notes || null,
+      notes: notes?.trim() || null,
+      created_at: new Date().toISOString()
     };
 
     const { data, error } = await db.createCustomer(customerData);
@@ -469,6 +477,21 @@ async function handleAddCustomer(e) {
 
     hideLoading();
     showNotification('Pelanggan berhasil ditambahkan! ✅', 'success');
+
+    // Clear form for potential next entry
+    document.getElementById('customer-form').reset();
+    
+    // Reset coordinate info
+    const coordinateInfoEl = document.getElementById('coordinate-info');
+    coordinateInfoEl.textContent = 'Belum ada koordinat dipilih';
+    delete coordinateInfoEl.dataset.lat;
+    delete coordinateInfoEl.dataset.lng;
+    
+    // Reset map marker if exists
+    if (marker) {
+      map.removeLayer(marker);
+      marker = null;
+    }
 
     // Navigate back to customers page
     setTimeout(() => {

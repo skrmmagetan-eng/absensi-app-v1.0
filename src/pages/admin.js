@@ -168,47 +168,63 @@ async function loadAdminData(customStart = null, customEnd = null) {
   const { start: defaultStart, end: defaultEnd } = getMonthDateRange();
   const start = customStart || defaultStart;
   const end = customEnd || defaultEnd;
+  const profile = state.getState('profile');
+  const isManager = profile?.role === 'manager';
 
   showLoading('Memuat data Dashboard...');
   try {
-    // 1. Load All Data in Parallel for maximum speed
-    const [employeesRes, kpiRes, ordersRes, attendanceRes, customersRes] = await Promise.all([
-      db.getAllEmployees(),
+    // 1. Use optimized dashboard stats function (single query for multiple metrics)
+    const [dashboardStatsRes, kpiRes, recentActivitiesRes] = await Promise.all([
+      db.getDashboardStats(
+        start + ' 00:00:00', 
+        end + ' 23:59:59', 
+        profile?.role || 'admin',
+        isManager ? profile?.id : null
+      ),
       db.getKPIStats(start + ' 00:00:00', end + ' 23:59:59'),
-      db.getOrders(), // We need this for widgets too
-      db.getAllAttendance(), // We need this for widgets too
-      db.getCustomers() // Only needed if RPC fails, but fetching in parallel is usually faster than sequential fallback
+      db.getRecentActivities(10, profile?.role || 'admin', isManager ? profile?.id : null)
     ]);
 
-    const employees = employeesRes.data || [];
-    document.getElementById('stat-employees').textContent = employees.length;
+    // 2. Update dashboard stats from optimized query
+    const stats = dashboardStatsRes.data;
+    if (stats) {
+      document.getElementById('stat-employees').textContent = stats.totalEmployees;
+      
+      const elRevenue = document.getElementById('stat-revenue');
+      if (elRevenue) elRevenue.textContent = formatCurrency(stats.totalRevenue);
+      
+      document.getElementById('stat-customers').textContent = stats.newCustomers;
+      
+      const elTarget = document.getElementById('kpi-target');
+      if (elTarget) elTarget.textContent = stats.activeTargets;
+    }
 
+    // 3. Handle KPI data with fallback
     let kpiStats = kpiRes.data || [];
-    const allOrders = ordersRes.data || [];
-    const allAttendance = attendanceRes.data || [];
-    const allCustomers = customersRes.data || [];
+    
+    // If RPC failed, use fallback calculation
+    if (kpiRes.error || kpiStats.length === 0) {
+      console.warn('KPI RPC failed, using fallback calculation');
+      
+      // Fallback: Load minimal data needed for KPI calculation
+      const [employeesRes, ordersRes, attendanceRes, customersRes] = await Promise.all([
+        db.getAllEmployees(),
+        db.getOrders(null, { startDate: start + ' 00:00:00', endDate: end + ' 23:59:59', limit: 1000 }),
+        db.getAllAttendance(start + ' 00:00:00', end + ' 23:59:59', { limit: 1000 }),
+        db.getCustomers()
+      ]);
 
-    // 2. If RPC failed or returned empty (and we have employees to report on), use client-side fallback
-    if (kpiRes.error || (kpiStats.length === 0 && employees.length > 0)) {
-      if (kpiRes.error) console.warn('RPC failed, using fallback:', kpiRes.error.message);
+      const employees = employeesRes.data || [];
+      const periodOrders = ordersRes.data || [];
+      const periodAttendance = attendanceRes.data || [];
+      const allCustomers = customersRes.data || [];
 
       const startDt = new Date(start);
       const endDt = new Date(end);
       endDt.setHours(23, 59, 59, 999);
 
-      // Filter data for the selected period
-      const periodOrders = allOrders.filter(o => {
-        const d = new Date(o.created_at);
-        return d >= startDt && d <= endDt;
-      });
-
       const periodCustomers = allCustomers.filter(c => {
         const d = new Date(c.created_at);
-        return d >= startDt && d <= endDt;
-      });
-
-      const periodAttendance = allAttendance.filter(a => {
-        const d = new Date(a.check_in_time);
         return d >= startDt && d <= endDt;
       });
 
@@ -231,26 +247,26 @@ async function loadAdminData(customStart = null, customEnd = null) {
       });
     }
 
-    // 3. Update Global Stats
+    // 4. Render KPI table
     kpiStats.sort((a, b) => b.score - a.score);
-    const totalRev = kpiStats.reduce((sum, k) => sum + (Number(k.total_sales) || 0), 0);
-    const totalNewCust = kpiStats.reduce((sum, k) => sum + (Number(k.new_customer_count) || 0), 0);
-
-    const elRevenue = document.getElementById('stat-revenue');
-    if (elRevenue) elRevenue.textContent = formatCurrency(totalRev);
-    document.getElementById('stat-customers').textContent = totalNewCust;
-
     renderKPITable(kpiStats);
 
-    // 4. Update Widgets with pre-loaded data
-    window._allRecentOrders = allOrders;
-    window._allRecentVisits = allAttendance;
+    // 5. Render recent activities from optimized query
+    const activities = recentActivitiesRes.data;
+    if (activities) {
+      renderLatestOrders(activities.recentOrders || []);
+      renderLatestVisits(activities.recentVisits || []);
+      
+      // Store for filtering
+      window._allRecentOrders = activities.recentOrders || [];
+      window._allRecentVisits = activities.recentVisits || [];
+    }
 
-    renderLatestOrders(allOrders.slice(0, 10));
-    renderLatestVisits(allAttendance.slice(0, 10));
-
-    // Define helper functions in window
+    // Setup global filters
     setupGlobalFilters();
+
+    // Setup real-time sync for admin dashboard
+    setupRealtimeSync();
 
   } catch (error) {
     console.error('Admin Load Error:', error);
@@ -259,6 +275,62 @@ async function loadAdminData(customStart = null, customEnd = null) {
     hideLoading();
   }
 }
+
+// Add real-time sync functionality
+let realtimeChannel = null;
+
+function setupRealtimeSync() {
+  // Only setup realtime for admin/manager roles
+  const profile = state.getState('profile');
+  if (!['admin', 'manager'].includes(profile?.role)) {
+    return;
+  }
+
+  // Setup real-time listener for data changes
+  realtimeChannel = db.setupRealtimeSync((table, payload) => {
+    console.log(`Real-time update: ${table}`, payload);
+    
+    // Show notification for new data
+    if (payload.eventType === 'INSERT') {
+      let message = '';
+      switch (table) {
+        case 'orders':
+          message = '💰 Order baru masuk!';
+          break;
+        case 'customers':
+          message = '👥 Pelanggan baru ditambahkan!';
+          break;
+        case 'attendance':
+          message = '📍 Check-in baru!';
+          break;
+      }
+      
+      if (message) {
+        showNotification(message, 'info');
+        
+        // Auto-refresh dashboard after 2 seconds
+        setTimeout(() => {
+          const currentPeriod = document.getElementById('dashboard-period').value;
+          if (currentPeriod) {
+            const [year, month] = currentPeriod.split('-');
+            const firstDay = new Date(year, month - 1, 1).toISOString().split('T')[0];
+            const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
+            loadAdminData(firstDay, lastDay);
+          } else {
+            loadAdminData();
+          }
+        }, 2000);
+      }
+    }
+  });
+}
+
+// Cleanup realtime connection when leaving page
+window.addEventListener('beforeunload', () => {
+  if (realtimeChannel) {
+    db.removeRealtimeSync(realtimeChannel);
+  }
+});
 
 function setupGlobalFilters() {
   window.reloadDashboardWithPeriod = (monthValue) => {

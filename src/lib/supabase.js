@@ -131,18 +131,35 @@ export const db = {
     },
 
     async createCustomer(customerData) {
+        // Ensure employee_id is set correctly and add audit trail
+        const user = await auth.getUser();
+        const finalData = {
+            ...customerData,
+            employee_id: user?.id || customerData.employee_id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            updated_by: user?.id
+        };
+
         const { data, error } = await supabase
             .from('customers')
-            .insert([customerData])
+            .insert([finalData])
             .select()
             .single();
         return { data, error };
     },
 
     async updateCustomer(customerId, updates) {
+        const user = await auth.getUser();
+        const finalUpdates = {
+            ...updates,
+            updated_at: new Date().toISOString(),
+            updated_by: user?.id
+        };
+
         const { data, error } = await supabase
             .from('customers')
-            .update(updates)
+            .update(finalUpdates)
             .eq('id', customerId)
             .select()
             .single();
@@ -159,18 +176,33 @@ export const db = {
 
     // Attendance
     async checkIn(attendanceData) {
+        // Ensure employee_id is set correctly
+        const user = await auth.getUser();
+        const finalData = {
+            ...attendanceData,
+            employee_id: user?.id || attendanceData.employee_id,
+            created_at: new Date().toISOString()
+        };
+
         const { data, error } = await supabase
             .from('attendance')
-            .insert([attendanceData])
+            .insert([finalData])
             .select()
             .single();
         return { data, error };
     },
 
     async checkOut(attendanceId, checkOutData) {
+        const user = await auth.getUser();
+        const finalData = {
+            ...checkOutData,
+            updated_at: new Date().toISOString(),
+            updated_by: user?.id
+        };
+
         const { data, error } = await supabase
             .from('attendance')
-            .update(checkOutData)
+            .update(finalData)
             .eq('id', attendanceId)
             .select()
             .single();
@@ -199,11 +231,21 @@ export const db = {
         return { data, error };
     },
 
-    async getAllAttendance(startDate = null, endDate = null) {
+    async getAllAttendance(startDate = null, endDate = null, options = {}) {
+        const { 
+            limit = 100, 
+            offset = 0, 
+            employeeId = null 
+        } = options;
+
         let query = supabase
             .from('attendance')
             .select('*, customers(*), users(name, email)')
             .order('check_in_time', { ascending: false });
+
+        if (employeeId) {
+            query = query.eq('employee_id', employeeId);
+        }
 
         if (startDate) {
             query = query.gte('check_in_time', startDate);
@@ -212,21 +254,73 @@ export const db = {
             query = query.lte('check_in_time', endDate);
         }
 
+        // Add pagination
+        query = query.range(offset, offset + limit - 1);
+
         const { data, error } = await query;
         return { data, error };
     },
 
+    // Get attendance count for pagination
+    async getAttendanceCount(startDate = null, endDate = null, employeeId = null) {
+        let query = supabase
+            .from('attendance')
+            .select('id', { count: 'exact', head: true });
+
+        if (employeeId) {
+            query = query.eq('employee_id', employeeId);
+        }
+
+        if (startDate) {
+            query = query.gte('check_in_time', startDate);
+        }
+        if (endDate) {
+            query = query.lte('check_in_time', endDate);
+        }
+
+        const { count, error } = await query;
+        return { data: count, error };
+    },
+
     // Orders
     async createOrder(orderData) {
+        // Ensure employee_id is set and create consistent items data
+        const user = await auth.getUser();
+        
+        // Ensure items_summary is generated from items array
+        let itemsSummary = '';
+        if (orderData.items && Array.isArray(orderData.items)) {
+            itemsSummary = orderData.items
+                .map(item => `${item.name} (${item.qty}x)`)
+                .join(', ');
+        }
+
+        const finalData = {
+            ...orderData,
+            employee_id: user?.id || orderData.employee_id,
+            items_summary: itemsSummary || orderData.items_summary,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            updated_by: user?.id
+        };
+
         const { data, error } = await supabase
             .from('orders')
-            .insert([orderData])
+            .insert([finalData])
             .select()
             .single();
         return { data, error };
     },
 
-    async getOrders(userId = null) {
+    async getOrders(userId = null, options = {}) {
+        const { 
+            limit = 100, 
+            offset = 0, 
+            status = null, 
+            startDate = null, 
+            endDate = null 
+        } = options;
+
         let query = supabase
             .from('orders')
             .select('*, customers(*), users(name, email)')
@@ -236,12 +330,60 @@ export const db = {
             query = query.eq('employee_id', userId);
         }
 
+        if (status && status !== 'all') {
+            query = query.eq('status', status);
+        }
+
+        if (startDate) {
+            query = query.gte('created_at', startDate);
+        }
+
+        if (endDate) {
+            query = query.lte('created_at', endDate);
+        }
+
+        // Add pagination
+        query = query.range(offset, offset + limit - 1);
+
         const { data, error } = await query;
         return { data, error };
     },
 
+    // Get orders count for pagination
+    async getOrdersCount(userId = null, options = {}) {
+        const { status = null, startDate = null, endDate = null } = options;
+
+        let query = supabase
+            .from('orders')
+            .select('id', { count: 'exact', head: true });
+
+        if (userId) {
+            query = query.eq('employee_id', userId);
+        }
+
+        if (status && status !== 'all') {
+            query = query.eq('status', status);
+        }
+
+        if (startDate) {
+            query = query.gte('created_at', startDate);
+        }
+
+        if (endDate) {
+            query = query.lte('created_at', endDate);
+        }
+
+        const { count, error } = await query;
+        return { data: count, error };
+    },
+
     async updateOrderStatus(orderId, status, notes = null) {
-        const payload = { status, updated_at: new Date().toISOString() };
+        const user = await auth.getUser();
+        const payload = { 
+            status, 
+            updated_at: new Date().toISOString(),
+            updated_by: user?.id
+        };
         if (notes) {
             payload.notes = notes;
         }
@@ -376,11 +518,47 @@ export const db = {
 
     // Visits / Survey
     async logVisit(visitData) {
+        // Ensure employee_id is set correctly (fix field naming)
+        const user = await auth.getUser();
+        const finalData = {
+            ...visitData,
+            employee_id: user?.id || visitData.employee_id, // Use employee_id instead of user_id
+            created_at: new Date().toISOString()
+        };
+
         const { data, error } = await supabase
             .from('customer_visits')
-            .insert([visitData])
+            .insert([finalData])
             .select();
         return { data, error };
+    },
+
+    // Real-time sync helpers
+    async setupRealtimeSync(callback) {
+        // Subscribe to data changes for real-time admin dashboard updates
+        const channel = supabase
+            .channel('data_changes')
+            .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'customers' }, 
+                (payload) => callback('customers', payload)
+            )
+            .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'orders' }, 
+                (payload) => callback('orders', payload)
+            )
+            .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'attendance' }, 
+                (payload) => callback('attendance', payload)
+            )
+            .subscribe();
+
+        return channel;
+    },
+
+    async removeRealtimeSync(channel) {
+        if (channel) {
+            await supabase.removeChannel(channel);
+        }
     },
 
     // KPI (Using RPC for performance)
@@ -400,6 +578,129 @@ export const db = {
                 end_date: endDate,
             });
         return { data, error };
+    },
+
+    // Optimized dashboard stats (single query for multiple metrics)
+    async getDashboardStats(startDate, endDate, userRole = 'admin', managerId = null) {
+        try {
+            // Parallel queries for better performance
+            const promises = [];
+
+            // 1. Employee count
+            let employeeQuery = supabase
+                .from('users')
+                .select('id', { count: 'exact', head: true })
+                .in('role', ['employee', 'manager']);
+            
+            // If manager, only show their team
+            if (userRole === 'manager' && managerId) {
+                // Assuming managers can only see employees they manage
+                // You might need to add a manager_id field to users table
+                employeeQuery = employeeQuery.eq('manager_id', managerId);
+            }
+            promises.push(employeeQuery);
+
+            // 2. Revenue this period
+            let revenueQuery = supabase
+                .from('orders')
+                .select('total_amount')
+                .eq('status', 'completed')
+                .gte('created_at', startDate)
+                .lte('created_at', endDate);
+            
+            if (userRole === 'manager' && managerId) {
+                revenueQuery = revenueQuery.eq('employee_id', managerId);
+            }
+            promises.push(revenueQuery);
+
+            // 3. New customers this period
+            let customerQuery = supabase
+                .from('customers')
+                .select('id', { count: 'exact', head: true })
+                .gte('created_at', startDate)
+                .lte('created_at', endDate);
+            
+            if (userRole === 'manager' && managerId) {
+                customerQuery = customerQuery.eq('employee_id', managerId);
+            }
+            promises.push(customerQuery);
+
+            // 4. Active targets
+            let targetQuery = supabase
+                .from('sales_plans')
+                .select('id', { count: 'exact', head: true })
+                .eq('current_status', 'on_progress');
+            
+            if (userRole === 'manager' && managerId) {
+                targetQuery = targetQuery.eq('employee_id', managerId);
+            }
+            promises.push(targetQuery);
+
+            // Execute all queries in parallel
+            const [employeeResult, revenueResult, customerResult, targetResult] = await Promise.all(promises);
+
+            // Calculate total revenue
+            const totalRevenue = revenueResult.data?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+
+            return {
+                data: {
+                    totalEmployees: employeeResult.count || 0,
+                    totalRevenue: totalRevenue,
+                    newCustomers: customerResult.count || 0,
+                    activeTargets: targetResult.count || 0
+                },
+                error: null
+            };
+
+        } catch (error) {
+            console.error('Dashboard stats error:', error);
+            return { data: null, error };
+        }
+    },
+
+    // Get recent activities for dashboard
+    async getRecentActivities(limit = 10, userRole = 'admin', managerId = null) {
+        try {
+            const promises = [];
+
+            // Recent orders
+            let orderQuery = supabase
+                .from('orders')
+                .select('id, total_amount, status, created_at, customers(name), users(name)')
+                .order('created_at', { ascending: false })
+                .limit(limit);
+            
+            if (userRole === 'manager' && managerId) {
+                orderQuery = orderQuery.eq('employee_id', managerId);
+            }
+            promises.push(orderQuery);
+
+            // Recent visits
+            let visitQuery = supabase
+                .from('attendance')
+                .select('id, check_in_time, notes, customers(name), users(name)')
+                .order('check_in_time', { ascending: false })
+                .limit(limit);
+            
+            if (userRole === 'manager' && managerId) {
+                visitQuery = visitQuery.eq('employee_id', managerId);
+            }
+            promises.push(visitQuery);
+
+            const [ordersResult, visitsResult] = await Promise.all(promises);
+
+            return {
+                data: {
+                    recentOrders: ordersResult.data || [],
+                    recentVisits: visitsResult.data || []
+                },
+                error: null
+            };
+
+        } catch (error) {
+            console.error('Recent activities error:', error);
+            return { data: null, error };
+        }
     },
 
     // Sales Plans / Targeting

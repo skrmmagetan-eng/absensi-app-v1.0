@@ -5,6 +5,9 @@ import { versionManager } from './utils/version.js';
 import { authChecker } from './utils/auth-check.js';
 import { roleSecurity } from './utils/role-security.js';
 
+// Import new activity-based security system (non-invasive)
+import './utils/security-init.js'; // Auto-initializes activity monitoring
+
 // Initialize Theme
 themeManager.init();
 import { renderLoginPage } from './pages/login.js';

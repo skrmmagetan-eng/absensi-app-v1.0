@@ -385,19 +385,63 @@ async function handleOrderSubmit(e) {
   showLoading('Mengirim data omset...');
 
   try {
+    // Generate items summary for consistency
     const itemsSummary = items.map(i => `${i.name} (${i.qty}x)`).join(', ');
 
     const orderData = {
       employee_id: user.id,
       customer_id: customerId,
       items: items, // JSONB column
-      items_summary: itemsSummary, // New field for string summary
+      items_summary: itemsSummary, // Text summary for admin views
       total_amount: totalAmount,
-      status: 'Pending',
-      notes: notes
+      status: 'pending', // Lowercase for consistency
+      notes: notes || null,
+      created_at: new Date().toISOString()
     };
 
-    const { error } = await db.createOrder(orderData);
+    const { data, error } = await db.createOrder(orderData);
+
+    if (error) throw error;
+
+    hideLoading();
+    showNotification('Data omset berhasil dikirim! 🎉', 'success');
+
+    // Reset form
+    document.getElementById('order-form').reset();
+    
+    // Reset items container to single row
+    const container = document.getElementById('order-items-container');
+    container.innerHTML = `
+      <div class="order-item-row flex gap-sm mb-sm">
+        <input type="text" class="form-input item-name" placeholder="Nama Barang" required style="flex: 2;">
+        <input type="number" class="form-input item-qty" placeholder="Qty" required style="flex: 1;" min="1" value="1">
+        <input type="number" class="form-input item-price" placeholder="Harga" required style="flex: 2;" min="0">
+        <button type="button" class="btn btn-danger btn-icon remove-item">×</button>
+      </div>
+    `;
+    
+    // Re-attach events for the new row
+    document.querySelectorAll('.order-item-row').forEach(row => attachRowEvents(row));
+    
+    // Update total display
+    updateTotal();
+
+    // Navigate back to orders list after short delay
+    setTimeout(() => {
+      window.location.hash = '#orders';
+    }, 2000);
+
+  } catch (error) {
+    hideLoading();
+    console.error('Order creation error:', error);
+    showNotification('Gagal mengirim data omset: ' + error.message, 'danger');
+  } finally {
+    // Reset button state
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = originalText;
+    }
+  }
 
     hideLoading();
     if (error) throw error;

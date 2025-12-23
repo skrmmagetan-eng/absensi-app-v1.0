@@ -1,0 +1,3 @@
+name,phone,address,employee_email,latitude,longitude,notes,created_at
+Pak Budi,081234567890,"Jl. Merdeka No. 123, Desa ABC, Kecamatan XYZ, Magetan",wicaksonopurwanto@gmail.com,-7.640000,111.280000,"Populasi: 50, Pakan: Comfeed",2025-12-23 10:00:00
+Bu Sari,082345678901,"Jl. Sudirman No. 456, Desa DEF, Kecamatan UVW, Magetan",anggaskharisma@gmail.com,-7.650000,111.290000,"Populasi: 30, Pakan: Pokhpand",2025-12-23 11:00:00

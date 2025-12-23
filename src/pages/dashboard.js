@@ -117,27 +117,58 @@ async function loadDashboardData() {
   const user = state.getState('user');
 
   try {
-    // Load today's attendance
-    const { data: attendance } = await db.getTodayAttendance(user.id);
+    // Load today's attendance with proper error handling
+    const { data: attendance, error: attendanceError } = await db.getTodayAttendance(user.id);
+    if (attendanceError) {
+      console.error('Attendance error:', attendanceError);
+    }
     document.getElementById('today-attendance').textContent = attendance?.length || 0;
     renderTodayAttendance(attendance || []);
 
-    // Load customers
-    const { data: customers } = await db.getCustomers(user.id);
+    // Load customers with proper filtering
+    const { data: customers, error: customersError } = await db.getCustomers(user.id);
+    if (customersError) {
+      console.error('Customers error:', customersError);
+    }
     document.getElementById('total-customers').textContent = customers?.length || 0;
 
-    // Load orders (this month)
-    const { data: orders } = await db.getOrders(user.id);
-    const thisMonth = new Date().getMonth();
-    const thisMonthOrders = orders?.filter(
-      (o) => new Date(o.created_at).getMonth() === thisMonth
-    ) || [];
+    // Load orders for this month with proper filtering
+    const { data: orders, error: ordersError } = await db.getOrders(user.id);
+    if (ordersError) {
+      console.error('Orders error:', ordersError);
+    }
+    
+    // Filter orders for current month to match admin view
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    
+    const thisMonthOrders = orders?.filter(order => {
+      const orderDate = new Date(order.created_at);
+      return orderDate >= startOfMonth && orderDate <= endOfMonth;
+    }) || [];
+    
     document.getElementById('total-orders').textContent = thisMonthOrders.length;
 
-    // Load KPI (placeholder for now)
-    document.getElementById('kpi-score').textContent = '85%';
+    // Calculate KPI score using same formula as admin view
+    const visitCount = attendance?.length || 0;
+    const newCustomersThisMonth = customers?.filter(customer => {
+      const customerDate = new Date(customer.created_at);
+      return customerDate >= startOfMonth && customerDate <= endOfMonth;
+    }).length || 0;
+    const orderCount = thisMonthOrders.length;
+    
+    // Same KPI formula as admin: (Visits * 2) + (New Customers * 10) + (Orders * 5)
+    const kpiScore = Math.min(100, (visitCount * 2) + (newCustomersThisMonth * 10) + (orderCount * 5));
+    document.getElementById('kpi-score').textContent = `${kpiScore}%`;
+
   } catch (error) {
     console.error('Error loading dashboard data:', error);
+    // Show user-friendly error message
+    document.getElementById('today-attendance').textContent = 'Error';
+    document.getElementById('total-customers').textContent = 'Error';
+    document.getElementById('total-orders').textContent = 'Error';
+    document.getElementById('kpi-score').textContent = 'Error';
   }
 }
 

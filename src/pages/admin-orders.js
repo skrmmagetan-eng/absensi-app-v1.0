@@ -53,18 +53,20 @@ async function loadAdminOrders() {
     container.innerHTML = '<div class="text-center p-lg"><div class="spinner"></div></div>';
 
     try {
-        const { data: orders, error } = await db.getOrders();
+        // Use optimized query with pagination and filtering
+        const options = {
+            limit: 50, // Load 50 orders at a time
+            offset: 0,
+            status: currentFilter === 'all' ? null : currentFilter
+        };
+
+        const { data: orders, error } = await db.getOrders(null, options);
 
         if (error) throw error;
 
         allOrders = orders; // Save to global
 
-        // Filter logic
-        const filtered = currentFilter === 'all'
-            ? orders
-            : orders.filter(o => (o.status || '').toLowerCase() === currentFilter.toLowerCase());
-
-        if (filtered.length === 0) {
+        if (orders.length === 0) {
             container.innerHTML = `
                 <div class="card text-center p-xl">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
@@ -73,7 +75,11 @@ async function loadAdminOrders() {
             return;
         }
 
-        container.innerHTML = filtered.map(order => renderOrderCard(order)).join('');
+        // Add pagination info
+        const paginationInfo = orders.length === 50 ? 
+            '<div class="text-center p-md"><small class="text-muted">Menampilkan 50 pesanan terbaru. Gunakan filter untuk mempersempit pencarian.</small></div>' : '';
+
+        container.innerHTML = orders.map(order => renderOrderCard(order)).join('') + paginationInfo;
 
     } catch (e) {
         console.error(e);
