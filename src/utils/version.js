@@ -1,6 +1,6 @@
 // Version Management and Update Notification System
 
-const APP_VERSION = '1.4.0-clean'; // Fixed version without timestamp
+const APP_VERSION = '1.4.1-stats-integrated'; // Fixed stats grid integration
 const VERSION_KEY = 'app_version';
 const UPDATE_DISMISSED_KEY = 'update_dismissed';
 const LAST_NOTIFICATION_KEY = 'last_notification_time';
