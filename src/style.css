@@ -1881,6 +1881,16 @@ a:hover {
   font-style: italic;
 }
 
+/* Error state */
+.searchable-dropdown.error .searchable-dropdown-input {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px rgba(245, 87, 108, 0.2);
+}
+
+.searchable-dropdown.error .searchable-dropdown-text.placeholder {
+  color: var(--danger);
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .searchable-dropdown-menu {

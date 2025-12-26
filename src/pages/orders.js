@@ -61,11 +61,11 @@ export async function renderCreateOrderPage() {
             <h2 class="card-title">📝 Input Omset Baru</h2>
           </div>
 
-          <form id="order-form">
+          <form id="order-form" novalidate>
             <!-- Select Customer -->
             <div class="form-group">
               <label class="form-label" for="customer">Pelanggan</label>
-              <select id="customer" class="form-select" required>
+              <select id="customer" class="form-select">
                 <option value="">Memuat daftar pelanggan...</option>
               </select>
             </div>
@@ -265,25 +265,44 @@ async function loadCustomersForDropdown() {
   const user = state.getState('user');
 
   try {
-    const { data: customers } = await db.getCustomers(user.id);
+    const { data: customers, error } = await db.getCustomers(user.id);
+    
+    if (error) {
+      console.error('❌ Failed to load customers:', error);
+      select.innerHTML = '<option value="">Gagal memuat pelanggan</option>';
+      select.style.display = 'block';
+      return;
+    }
+
     if (customers && customers.length > 0) {
       // Store customers data for search functionality
       window.customersData = customers;
       
-      // Replace select with searchable dropdown
-      createSearchableDropdown('customer', customers, {
-        placeholder: '-- Pilih Pelanggan --',
-        searchPlaceholder: '🔍 Cari pelanggan (nama, alamat, jenis ternak)...',
-        displayField: (customer) => `${customer.name} - ${customer.address}`,
-        searchFields: ['name', 'address', 'livestock_type'],
-        valueField: 'id'
-      });
+      // Replace select with searchable dropdown and store reference
+      try {
+        window.customerDropdown = createSearchableDropdown('customer', customers, {
+          placeholder: '-- Pilih Pelanggan --',
+          searchPlaceholder: '🔍 Cari pelanggan (nama, alamat, jenis ternak)...',
+          displayField: (customer) => `${customer.name} - ${customer.address}`,
+          searchFields: ['name', 'address', 'livestock_type'],
+          valueField: 'id'
+        });
+        console.log('✅ Searchable dropdown created successfully');
+      } catch (dropdownError) {
+        console.error('❌ Failed to create searchable dropdown:', dropdownError);
+        // Fallback to regular select
+        select.innerHTML = '<option value="">-- Pilih Pelanggan --</option>' + 
+          customers.map(c => `<option value="${c.id}">${c.name} - ${c.address}</option>`).join('');
+        select.style.display = 'block';
+      }
     } else {
       select.innerHTML = '<option value="">Belum ada pelanggan aktif</option>';
+      select.style.display = 'block';
     }
   } catch (e) {
-    console.error(e);
-    select.innerHTML = '<option value="">Gagal memuat</option>';
+    console.error('❌ Failed to load customers:', e);
+    select.innerHTML = '<option value="">Gagal memuat pelanggan</option>';
+    select.style.display = 'block';
   }
 }
 
@@ -346,37 +365,81 @@ function calculateTotal() {
 async function handleOrderSubmit(e) {
   e.preventDefault();
 
-  const customerId = document.getElementById('customer').value;
-  if (!customerId) {
-    showNotification('Pilih pelanggan terlebih dahulu', 'warning');
-    return;
+  // Custom validation for customer selection
+  let customerId;
+  if (window.customerDropdown) {
+    customerId = window.customerDropdown.getValue();
+    if (!customerId) {
+      window.customerDropdown.showError();
+      showNotification('Pilih pelanggan terlebih dahulu', 'warning');
+      return;
+    }
+    window.customerDropdown.clearError();
+  } else {
+    // Fallback to regular select
+    customerId = document.getElementById('customer').value;
+    if (!customerId) {
+      showNotification('Pilih pelanggan terlebih dahulu', 'warning');
+      return;
+    }
   }
 
+  // Validate order items
   const items = [];
   let totalAmount = 0;
+  let hasValidItems = false;
 
   document.querySelectorAll('.order-item-row').forEach(row => {
-    const name = row.querySelector('.item-name').value;
-    const qty = parseFloat(row.querySelector('.item-qty').value);
-    const price = parseFloat(row.querySelector('.item-price').value);
+    const nameInput = row.querySelector('.item-name');
+    const qtyInput = row.querySelector('.item-qty');
+    const priceInput = row.querySelector('.item-price');
+    
+    const name = nameInput?.value?.trim();
+    const qty = parseFloat(qtyInput?.value) || 0;
+    const price = parseFloat(priceInput?.value) || 0;
 
-    if (name && qty > 0) {
+    // Validate individual item fields
+    if (name && qty > 0 && price >= 0) {
       items.push({ name, qty, price });
       totalAmount += qty * price;
+      hasValidItems = true;
+    } else if (name || qty > 0 || price > 0) {
+      // Partial data - show specific validation errors
+      if (!name) {
+        nameInput?.focus();
+        showNotification('Nama barang tidak boleh kosong', 'warning');
+        return;
+      }
+      if (qty <= 0) {
+        qtyInput?.focus();
+        showNotification('Jumlah barang harus lebih dari 0', 'warning');
+        return;
+      }
+      if (price < 0) {
+        priceInput?.focus();
+        showNotification('Harga tidak boleh negatif', 'warning');
+        return;
+      }
     }
   });
 
-  if (items.length === 0) {
-    showNotification('Masukkan minimal satu barang', 'warning');
+  if (!hasValidItems) {
+    showNotification('Masukkan minimal satu barang dengan data lengkap', 'warning');
+    document.querySelector('.item-name')?.focus();
     return;
   }
 
-  const notes = document.getElementById('notes').value;
+  const notes = document.getElementById('notes')?.value?.trim() || '';
   const user = state.getState('user');
+
+  if (!user?.id) {
+    showNotification('Sesi login tidak valid, silakan login ulang', 'danger');
+    return;
+  }
 
   // Loading State
   const btnSubmit = document.getElementById('btn-submit-order');
-  const originalText = btnSubmit.innerHTML;
+  const originalText = btnSubmit?.innerHTML;
   if (btnSubmit) {
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = `<span>⏳</span> Mengirim...`;
@@ -399,6 +462,8 @@ async function handleOrderSubmit(e) {
       created_at: new Date().toISOString()
     };
 
+    console.log('📤 Submitting order data:', orderData);
+
     const { data, error } = await db.createOrder(orderData);
 
     if (error) throw error;
@@ -416,15 +481,20 @@ async function handleOrderSubmit(e) {
         <input type="text" class="form-input item-name" placeholder="Nama Barang" required style="flex: 2;">
         <input type="number" class="form-input item-qty" placeholder="Qty" required style="flex: 1;" min="1" value="1">
         <input type="number" class="form-input item-price" placeholder="Harga" required style="flex: 2;" min="0">
-        <button type="button" class="btn btn-danger btn-icon remove-item">×</button>
+        <button type="button" class="btn btn-danger btn-icon remove-item" disabled>×</button>
       </div>
     `;
     
     // Re-attach events for the new row
     document.querySelectorAll('.order-item-row').forEach(row => attachRowEvents(row));
     
+    // Reset customer dropdown
+    if (window.customerDropdown) {
+      window.customerDropdown.setValue('');
+    }
+    
     // Update total display
-    updateTotal();
+    calculateTotal();
 
     // Navigate back to orders list after short delay
     setTimeout(() => {
@@ -433,8 +503,8 @@ async function handleOrderSubmit(e) {
 
   } catch (error) {
     hideLoading();
-    console.error('Order creation error:', error);
-    showNotification('Gagal mengirim data omset: ' + error.message, 'danger');
+    console.error('❌ Order creation error:', error);
+    showNotification('Gagal mengirim data omset: ' + (error.message || 'Terjadi kesalahan'), 'danger');
   } finally {
     // Reset button state
     if (btnSubmit) {

@@ -204,9 +204,18 @@ async function getCurrentLocation() {
     btn.innerHTML = '<span>✅</span><span>Lokasi Terdeteksi</span>';
     btn.disabled = false;
 
-    // Enable submit if customer is selected
-    if (document.getElementById('customer').value) {
+    // Check if all required fields are filled to enable submit
+    const customerSelect = document.getElementById('customer');
+    const photoInput = document.getElementById('checkin-photo');
+    const hasCustomer = customerSelect.value;
+    const hasPhoto = photoInput.files && photoInput.files.length > 0;
+
+    if (hasCustomer && hasPhoto) {
       submitBtn.disabled = false;
+    }
+
+    // Calculate distance if customer is selected
+    if (hasCustomer) {
       calculateDistance();
     }
 
@@ -215,7 +224,10 @@ async function getCurrentLocation() {
     locationInfo.textContent = '❌ ' + error.message;
     btn.innerHTML = '<span>🔄</span><span>Coba Lagi</span>';
     btn.disabled = false;
-    showNotification(error.message, 'danger');
+    
+    // Show manual location option after GPS fails
+    showManualLocationOption();
+    showNotification(error.message + ' - Gunakan lokasi manual sebagai alternatif', 'warning');
   }
 }
 
@@ -254,7 +266,7 @@ function calculateDistance() {
       iconSize: [32, 32],
       iconAnchor: [16, 32],
     }),
-  }).addTo(map).bindPopup(`<strong>Lokasi Pelanggan</strong><br>${selectedOption.text}`).openPopup();
+  }).addTo(map).bindPopup(`<strong>Lokasi Pelanggan</strong><br>Lokasi Pelanggan`).openPopup();
 
   // Fit bounds to show both markers
   const bounds = L.latLngBounds([
@@ -288,8 +300,14 @@ function setupEventListeners() {
   document.getElementById('customer').addEventListener('change', (e) => {
     const submitBtn = document.getElementById('submit-btn');
     const locationInfo = document.getElementById('location-info');
+    const photoInput = document.getElementById('checkin-photo');
 
-    if (e.target.value && locationInfo.dataset.lat) {
+    // Check if all required fields are filled
+    const hasCustomer = e.target.value;
+    const hasLocation = locationInfo.dataset.lat || document.getElementById('manual-location-input');
+    const hasPhoto = photoInput.files && photoInput.files.length > 0;
+
+    if (hasCustomer && hasLocation) {
       submitBtn.disabled = false;
       calculateDistance();
     } else {
@@ -297,8 +315,93 @@ function setupEventListeners() {
     }
   });
 
+  // Photo input change
+  document.getElementById('checkin-photo').addEventListener('change', (e) => {
+    const submitBtn = document.getElementById('submit-btn');
+    const customerSelect = document.getElementById('customer');
+    const locationInfo = document.getElementById('location-info');
+
+    // Check if all required fields are filled
+    const hasCustomer = customerSelect.value;
+    const hasLocation = locationInfo.dataset.lat || document.getElementById('manual-location-input');
+    const hasPhoto = e.target.files && e.target.files.length > 0;
+
+    if (hasCustomer && hasLocation && hasPhoto) {
+      submitBtn.disabled = false;
+    } else {
+      submitBtn.disabled = true;
+    }
+  });
+
   // Form submission
   document.getElementById('checkin-form').addEventListener('submit', handleCheckIn);
+}
+
+function showManualLocationOption() {
+  const locationDiv = document.querySelector('#map').parentElement;
+  
+  // Check if manual option already exists
+  if (document.getElementById('manual-location-section')) return;
+  
+  const manualSection = document.createElement('div');
+  manualSection.id = 'manual-location-section';
+  manualSection.innerHTML = `
+    <div class="alert alert-warning mt-sm">
+      <strong>⚠️ GPS Tidak Tersedia</strong>
+      <p>Gunakan opsi manual di bawah ini untuk melanjutkan check-in:</p>
+      
+      <div class="form-group mt-sm">
+        <label class="form-label">Lokasi Manual *</label>
+        <input 
+          type="text" 
+          id="manual-location-input" 
+          class="form-input" 
+          placeholder="Contoh: Jl. Sudirman No. 123, Jakarta"
+          required
+        >
+        <small class="text-muted">Masukkan alamat lengkap lokasi Anda saat ini</small>
+      </div>
+      
+      <button type="button" class="btn btn-outline btn-small" id="confirm-manual-location">
+        <span>✅</span>
+        <span>Konfirmasi Lokasi Manual</span>
+      </button>
+    </div>
+  `;
+  
+  locationDiv.appendChild(manualSection);
+  
+  // Add event listener for manual location
+  document.getElementById('confirm-manual-location').addEventListener('click', () => {
+    const manualInput = document.getElementById('manual-location-input');
+    const locationInfo = document.getElementById('location-info');
+    
+    if (!manualInput.value.trim()) {
+      showNotification('Mohon masukkan alamat lokasi', 'warning');
+      return;
+    }
+    
+    // Set manual location data
+    locationInfo.textContent = `📍 ${manualInput.value.trim()} (Manual)`;
+    locationInfo.dataset.lat = '0'; // Dummy coordinates for manual
+    locationInfo.dataset.lng = '0';
+    locationInfo.dataset.manual = 'true';
+    locationInfo.dataset.address = manualInput.value.trim();
+    
+    // Enable submit if other requirements are met
+    const customerSelect = document.getElementById('customer');
+    const photoInput = document.getElementById('checkin-photo');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    if (customerSelect.value && photoInput.files && photoInput.files.length > 0) {
+      submitBtn.disabled = false;
+    }
+    
+    showNotification('Lokasi manual berhasil dikonfirmasi', 'success');
+    
+    // Hide manual section
+    manualSection.style.display = 'none';
+  });
 }
 
 async function handleCheckIn(e) {
@@ -311,7 +414,11 @@ async function handleCheckIn(e) {
   const locationInfo = document.getElementById('location-info');
   const user = state.getState('user');
 
-  if (!locationInfo.dataset.lat || !locationInfo.dataset.lng) {
+  // Check for manual location
+  const isManualLocation = locationInfo.dataset.manual === 'true';
+  const manualAddress = locationInfo.dataset.address;
+
+  if (!isManualLocation && (!locationInfo.dataset.lat || !locationInfo.dataset.lng)) {
     showNotification('Harap dapatkan lokasi Anda terlebih dahulu', 'warning');
     return;
   }
@@ -333,18 +440,32 @@ async function handleCheckIn(e) {
       employee_id: user.id,
       customer_id: customerId,
       check_in_time: new Date().toISOString(),
-      check_in_latitude: parseFloat(locationInfo.dataset.lat),
-      check_in_longitude: parseFloat(locationInfo.dataset.lng),
       notes: notes || null,
-      photo_url: photoUrl, // Adding photo_url field
+      photo_url: photoUrl,
     };
+
+    // Add location data based on type
+    if (isManualLocation) {
+      attendanceData.check_in_latitude = 0; // Dummy coordinates
+      attendanceData.check_in_longitude = 0;
+      attendanceData.manual_location = manualAddress;
+      attendanceData.notes = (notes ? notes + '\n\n' : '') + `📍 Lokasi Manual: ${manualAddress}`;
+    } else {
+      attendanceData.check_in_latitude = parseFloat(locationInfo.dataset.lat);
+      attendanceData.check_in_longitude = parseFloat(locationInfo.dataset.lng);
+    }
 
     const { data, error } = await db.checkIn(attendanceData);
 
     if (error) throw error;
 
     hideLoading();
-    showNotification('Check in berhasil! ✅', 'success');
+    
+    if (isManualLocation) {
+      showNotification('Check in berhasil dengan lokasi manual! ✅', 'success');
+    } else {
+      showNotification('Check in berhasil! ✅', 'success');
+    }
 
     // Navigate to dashboard
     setTimeout(() => {

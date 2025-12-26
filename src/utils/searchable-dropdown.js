@@ -40,6 +40,15 @@ export function createSearchableDropdown(elementId, data, options = {}) {
   // Replace original select
   originalSelect.parentNode.insertBefore(wrapper, originalSelect);
   originalSelect.style.display = 'none';
+  
+  // Store original required state and remove from hidden select to prevent validation issues
+  const wasRequired = originalSelect.hasAttribute('required');
+  originalSelect.removeAttribute('required');
+  
+  // Add data attribute to track if this was originally required for custom validation
+  if (wasRequired) {
+    wrapper.setAttribute('data-required', 'true');
+  }
 
   // Get elements
   const input = wrapper.querySelector('.searchable-dropdown-input');
@@ -216,6 +225,26 @@ export function createSearchableDropdown(elementId, data, options = {}) {
       data = newData;
       filteredData = [...newData];
       renderOptions();
-    }
+    },
+    validate: () => {
+      const isRequired = wrapper.getAttribute('data-required') === 'true';
+      if (isRequired && !selectedValue) {
+        wrapper.classList.add('error');
+        return false;
+      }
+      wrapper.classList.remove('error');
+      return true;
+    },
+    showError: (message) => {
+      wrapper.classList.add('error');
+      // Optional: Add error message display
+      if (message) {
+        console.warn('Dropdown validation error:', message);
+      }
+    },
+    clearError: () => {
+      wrapper.classList.remove('error');
+    },
+    isRequired: () => wrapper.getAttribute('data-required') === 'true'
   };
 }
