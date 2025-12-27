@@ -4,6 +4,7 @@ import { themeManager } from './utils/theme.js';
 import { versionManager } from './utils/version.js';
 import { authChecker } from './utils/auth-check.js';
 import { roleSecurity } from './utils/role-security.js';
+import { PWAUpdateManager, clearAppCache, checkForUpdates } from './utils/pwa-update-manager.js';
 
 // Import new activity-based security system (non-invasive)
 import './utils/security-init.js'; // Auto-initializes activity monitoring
@@ -493,30 +494,43 @@ if ('serviceWorker' in navigator) {
 
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
-        console.log('ServiceWorker registered:', registration.scope);
+        console.log('✅ ServiceWorker registered:', registration.scope);
 
-        // Check for updates periodically (every 15 minutes)
+        // Enhanced update checking system
+        const updateManager = new PWAUpdateManager(registration);
+        updateManager.init();
+
+        // Check for updates more frequently (every 5 minutes)
         setInterval(() => {
-          console.log('Checking for PWA updates...');
+          console.log('🔍 Checking for PWA updates...');
           registration.update();
-        }, 15 * 60 * 1000);
+        }, 5 * 60 * 1000);
+
+        // Listen for service worker messages
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'SW_UPDATED') {
+            updateManager.showUpdateAvailable();
+          }
+        });
 
         // Check if there's already a waiting worker (update ready but waiting)
         if (registration.waiting) {
-          showUpdateNotification(registration.waiting);
+          updateManager.showUpdateAvailable(registration.waiting);
         }
 
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
+          console.log('🔄 New service worker installing...');
 
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed') {
               if (navigator.serviceWorker.controller) {
                 // New update available!
-                showUpdateNotification(newWorker);
+                console.log('🎉 New update available!');
+                updateManager.showUpdateAvailable(newWorker);
               } else {
                 // Content cached for offline use.
-                console.log('Content is cached for offline use.');
+                console.log('📦 Content is cached for offline use.');
               }
             }
           });
@@ -525,6 +539,10 @@ if ('serviceWorker' in navigator) {
       .catch((err) => {
         console.log('ServiceWorker registration failed: ', err);
       });
+
+    // Make global functions available
+    window.clearAppCache = clearAppCache;
+    window.checkForUpdates = checkForUpdates;
   });
 }
 
