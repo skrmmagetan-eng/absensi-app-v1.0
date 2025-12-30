@@ -11,12 +11,12 @@ class ActivityMonitor {
     this.warningTimer = null;
     this.lastActivity = Date.now();
     
-    // Konfigurasi (dalam milidetik)
+    // Konfigurasi (dalam milidetik) - DIPERPANJANG UNTUK MENGURANGI GANGGUAN
     this.config = {
-      inactivityTimeout: 30 * 60 * 1000,    // 30 menit idle = logout
-      warningTime: 25 * 60 * 1000,          // 25 menit = show warning
-      checkInterval: 60 * 1000,             // Cek setiap 1 menit
-      debugMode: false                      // Set true untuk debugging
+      inactivityTimeout: 2 * 60 * 60 * 1000,    // 2 JAM idle = logout (diperpanjang dari 30 menit)
+      warningTime: 110 * 60 * 1000,             // 110 menit = show warning (10 menit sebelum logout)
+      checkInterval: 5 * 60 * 1000,             // Cek setiap 5 menit (dikurangi frekuensi)
+      debugMode: false                          // Set true untuk debugging
     };
 
     // Events yang dianggap sebagai aktivitas
@@ -65,8 +65,8 @@ class ActivityMonitor {
       warningTime: this.config.warningTime / 1000 / 60 + ' minutes'
     });
 
-    // Show status notification
-    this.showStatusNotification('🔒 Keamanan aktif: Auto-logout setelah 30 menit tidak aktif', 'info');
+    // TIDAK TAMPILKAN NOTIFIKASI STARTUP - MENGURANGI GANGGUAN
+    // this.showStatusNotification('🔒 Keamanan aktif: Auto-logout setelah 2 jam tidak aktif', 'info');
   }
 
   /**
@@ -130,8 +130,8 @@ class ActivityMonitor {
     const now = Date.now();
     const timeSinceLastActivity = now - this.lastActivity;
 
-    // Throttle: hanya process jika sudah 1 detik sejak aktivitas terakhir
-    if (timeSinceLastActivity < 1000) return;
+    // Throttle: hanya process jika sudah 5 detik sejak aktivitas terakhir (diperpanjang untuk mengurangi gangguan)
+    if (timeSinceLastActivity < 5000) return;
 
     this.lastActivity = now;
     this.isActive = true;
@@ -279,27 +279,26 @@ class ActivityMonitor {
   }
 
   /**
-   * Default warning handler
+   * Default warning handler - LEBIH SUBTLE
    */
   defaultWarning() {
     this.log('Default warning triggered');
     
+    // PERINGATAN YANG LEBIH HALUS - TIDAK MENGGUNAKAN ALERT
     this.showStatusNotification(
-      '⚠️ Peringatan: Sesi akan berakhir dalam 5 menit jika tidak ada aktivitas. Gerakkan mouse untuk melanjutkan.', 
+      '⚠️ Sesi akan berakhir dalam 10 menit jika tidak ada aktivitas', 
       'warning'
     );
   }
 
   /**
-   * Default activity resume handler
+   * Default activity resume handler - LEBIH SUBTLE
    */
   defaultActivityResume() {
     this.log('Activity resumed');
     
-    this.showStatusNotification(
-      '✅ Aktivitas terdeteksi. Sesi dilanjutkan.', 
-      'success'
-    );
+    // TIDAK TAMPILKAN NOTIFIKASI RESUME - MENGURANGI GANGGUAN
+    // this.showStatusNotification('✅ Aktivitas terdeteksi. Sesi dilanjutkan.', 'success');
   }
 
   /**

@@ -43,8 +43,8 @@ class SessionSecurity {
     this.isInitialized = true;
     console.log('✅ Session security initialized for user:', user.email);
 
-    // Show initialization notification
-    this.showNotification('🔒 Keamanan sesi aktif: Auto-logout setelah 30 menit tidak aktif', 'info');
+    // TIDAK TAMPILKAN NOTIFIKASI STARTUP - MENGURANGI GANGGUAN
+    // this.showNotification('🔒 Keamanan sesi aktif: Auto-logout setelah 2 jam tidak aktif', 'info');
   }
 
   /**
@@ -166,8 +166,8 @@ class SessionSecurity {
         </div>
         
         <div class="session-warning-body">
-          <p>Sesi Anda akan berakhir dalam <strong id="countdown-timer">5:00</strong> karena tidak ada aktivitas.</p>
-          <p>Klik "Lanjutkan Sesi" atau gerakkan mouse untuk melanjutkan bekerja.</p>
+          <p>Sesi Anda akan berakhir dalam <strong id="countdown-timer">10:00</strong> karena tidak ada aktivitas.</p>
+          <p>Klik "Lanjutkan Sesi" untuk melanjutkan bekerja.</p>
         </div>
         
         <div class="session-warning-footer">
@@ -213,7 +213,7 @@ class SessionSecurity {
    * Start countdown timer in warning modal
    */
   startWarningCountdown() {
-    let timeLeft = 5 * 60; // 5 minutes in seconds
+    let timeLeft = 10 * 60; // 10 minutes in seconds (diperpanjang dari 5 menit)
 
     this.countdownInterval = setInterval(() => {
       const minutes = Math.floor(timeLeft / 60);

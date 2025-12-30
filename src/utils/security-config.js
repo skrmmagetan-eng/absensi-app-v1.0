@@ -5,10 +5,10 @@
  */
 
 export const SECURITY_CONFIG = {
-  // Activity-based timeouts (dalam milidetik)
-  INACTIVITY_TIMEOUT: 30 * 60 * 1000,    // 30 menit tidak ada aktivitas = logout
-  WARNING_TIME: 25 * 60 * 1000,          // 25 menit = tampilkan peringatan
-  CHECK_INTERVAL: 60 * 1000,             // Cek setiap 1 menit
+  // Activity-based timeouts (dalam milidetik) - DIPERPANJANG UNTUK MENGURANGI GANGGUAN
+  INACTIVITY_TIMEOUT: 2 * 60 * 60 * 1000,    // 2 JAM tidak ada aktivitas = logout (diperpanjang dari 30 menit)
+  WARNING_TIME: 110 * 60 * 1000,             // 110 menit = tampilkan peringatan (10 menit sebelum logout)
+  CHECK_INTERVAL: 5 * 60 * 1000,             // Cek setiap 5 menit (dikurangi frekuensi)
   
   // Events yang dianggap sebagai aktivitas user
   ACTIVITY_EVENTS: [
@@ -17,27 +17,27 @@ export const SECURITY_CONFIG = {
   ],
   
   // Throttling untuk mengurangi beban CPU
-  ACTIVITY_THROTTLE: 1000,               // Minimum 1 detik antara activity detection
+  ACTIVITY_THROTTLE: 5000,               // Minimum 5 detik antara activity detection (diperpanjang)
   
   // Debug mode
   DEBUG_MODE: false,                     // Set true untuk debugging
   
-  // Notification settings
-  SHOW_INIT_NOTIFICATION: true,         // Tampilkan notifikasi saat security aktif
-  SHOW_WARNING_MODAL: true,             // Tampilkan modal peringatan
-  SHOW_ACTIVITY_RESUME: true,           // Tampilkan notifikasi saat aktivitas kembali
+  // Notification settings - DIKURANGI UNTUK MENGURANGI GANGGUAN
+  SHOW_INIT_NOTIFICATION: false,         // TIDAK tampilkan notifikasi saat security aktif
+  SHOW_WARNING_MODAL: true,             // Tampilkan modal peringatan (tetap untuk keamanan)
+  SHOW_ACTIVITY_RESUME: false,          // TIDAK tampilkan notifikasi saat aktivitas kembali
   
   // Fallback settings
   FALLBACK_TO_OLD_SYSTEM: true,         // Jika error, kembali ke sistem lama
   MAX_INIT_ATTEMPTS: 10,                // Maksimal percobaan inisialisasi
   
-  // Custom messages
+  // Custom messages - DIPERBARUI DENGAN WAKTU BARU
   MESSAGES: {
-    INIT: '🔒 Keamanan sesi aktif: Auto-logout setelah 30 menit tidak aktif',
-    WARNING: '⚠️ Peringatan: Sesi akan berakhir dalam 5 menit jika tidak ada aktivitas. Gerakkan mouse untuk melanjutkan.',
-    LOGOUT: '🔒 Sesi berakhir: Tidak ada aktivitas selama 30 menit. Silakan login kembali.',
+    INIT: '🔒 Keamanan sesi aktif: Auto-logout setelah 2 jam tidak aktif',
+    WARNING: '⚠️ Sesi akan berakhir dalam 10 menit jika tidak ada aktivitas',
+    LOGOUT: '🔒 Sesi berakhir: Tidak ada aktivitas selama 2 jam. Silakan login kembali.',
     ACTIVITY_RESUME: '✅ Aktivitas terdeteksi. Sesi dilanjutkan.',
-    SECURING_DATA: '🔒 Sesi berakhir: Tidak ada aktivitas selama 30 menit. Mengamankan data...',
+    SECURING_DATA: '🔒 Sesi berakhir: Tidak ada aktivitas selama 2 jam. Mengamankan data...',
     DATA_SECURED: '✅ Data berhasil diamankan. Silakan login kembali.'
   }
 };
@@ -74,12 +74,12 @@ export const SECURITY_PRESETS = {
     SHOW_INIT_NOTIFICATION: true
   },
   
-  // Untuk kantor (keamanan normal)
+  // Untuk kantor (keamanan normal) - DIPERPANJANG
   OFFICE: {
-    INACTIVITY_TIMEOUT: 30 * 60 * 1000,  // 30 menit
-    WARNING_TIME: 25 * 60 * 1000,        // 25 menit
+    INACTIVITY_TIMEOUT: 2 * 60 * 60 * 1000,  // 2 jam (diperpanjang dari 30 menit)
+    WARNING_TIME: 110 * 60 * 1000,           // 110 menit (10 menit sebelum logout)
     DEBUG_MODE: false,
-    SHOW_INIT_NOTIFICATION: true
+    SHOW_INIT_NOTIFICATION: false             // Tidak tampilkan notifikasi startup
   },
   
   // Untuk area publik (keamanan tinggi)
