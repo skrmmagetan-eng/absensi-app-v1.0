@@ -265,6 +265,25 @@ async function showAddEmployeeModal() {
                <option value="manager">Manager (Supervisor)</option>
             </select>
           </div>
+          <div class="form-group">
+            <label class="form-label">Foto Profil Karyawan</label>
+            <div class="photo-upload-container" style="border: 2px dashed #ddd; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 10px;">
+              <div id="new-photo-preview" style="margin-bottom: 15px;">
+                <div style="width: 100px; height: 100px; border-radius: 50%; background: #f8f9fa; display: flex; align-items: center; justify-content: center; margin: 0 auto; border: 2px dashed #ddd;">
+                  <span style="font-size: 2rem;">👤</span>
+                </div>
+              </div>
+              <input type="file" id="new-photo-upload" accept="image/*" style="display: none;">
+              <button type="button" class="btn btn-outline btn-small" onclick="document.getElementById('new-photo-upload').click()">
+                📷 Pilih Foto
+              </button>
+              <div style="margin-top: 10px; font-size: 0.875rem; color: #6c757d;">
+                Format: JPG, PNG, GIF (Max: 2MB)
+              </div>
+            </div>
+            <input type="url" id="new-avatar" class="form-input" placeholder="Atau masukkan URL foto langsung">
+            <small class="text-muted">Upload foto atau masukkan URL foto profil (opsional)</small>
+          </div>
         </form>
       </div>
       <div class="modal-footer">
@@ -282,12 +301,55 @@ async function showAddEmployeeModal() {
   overlay.querySelector('.modal-close').onclick = close;
   overlay.querySelector('#btn-cancel').onclick = close;
 
+  // Photo upload handler for new employee
+  const newPhotoUpload = document.getElementById('new-photo-upload');
+  const newAvatarInput = document.getElementById('new-avatar');
+  const newPhotoPreview = document.getElementById('new-photo-preview');
+  
+  newPhotoUpload.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      showNotification('File harus berupa gambar (JPG, PNG, GIF)', 'danger');
+      return;
+    }
+    
+    if (file.size > 2 * 1024 * 1024) { // 2MB
+      showNotification('Ukuran file maksimal 2MB', 'danger');
+      return;
+    }
+    
+    try {
+      showLoading('Mengupload foto...');
+      
+      // Use the centralized upload function
+      const { data: photoUrl, error: uploadError } = await db.uploadEmployeePhoto(file);
+      
+      if (uploadError) throw uploadError;
+      
+      // Update preview and input
+      newPhotoPreview.innerHTML = `<img src="${photoUrl}" alt="Foto Profil" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #007bff;">`;
+      newAvatarInput.value = photoUrl;
+      
+      hideLoading();
+      showNotification('Foto berhasil diupload!', 'success');
+      
+    } catch (error) {
+      hideLoading();
+      console.error('Upload error:', error);
+      showNotification('Gagal mengupload foto: ' + error.message, 'danger');
+    }
+  });
+
   overlay.querySelector('#btn-save').onclick = async () => {
     // Capture values properly
     const name = document.getElementById('new-name').value;
     const email = document.getElementById('new-email').value;
     const password = document.getElementById('new-password').value;
     const role = document.getElementById('new-role').value;
+    const avatarUrl = document.getElementById('new-avatar').value;
 
     if (!name || !email || !password) {
       showNotification('Mohon lengkapi semua data', 'warning');
@@ -297,7 +359,8 @@ async function showAddEmployeeModal() {
     // Close first, then process
     close();
 
-    // Process
+    // Process with avatar URL
+    await handleAddEmployee({ name, email, password, role, avatar_url: avatarUrl });
     await handleAddEmployee(name, email, password, role);
   };
 }
@@ -332,8 +395,21 @@ function showEditEmployeeModal(emp) {
               <textarea id="edit-notes" class="form-input" rows="2" placeholder="Catatan tambahan">${emp.notes || ''}</textarea>
             </div>
             <div class="form-group">
-              <label class="form-label">URL Foto Profil</label>
-              <input type="url" id="edit-avatar" class="form-input" value="${emp.avatar_url || ''}" placeholder="https://...">
+              <label class="form-label">Foto Profil Karyawan</label>
+              <div class="photo-upload-container" style="border: 2px dashed #ddd; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 10px;">
+                <div id="current-photo-preview" style="margin-bottom: 15px;">
+                  ${emp.avatar_url ? `<img src="${emp.avatar_url}" alt="Foto Profil" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #007bff;">` : '<div style="width: 100px; height: 100px; border-radius: 50%; background: #f8f9fa; display: flex; align-items: center; justify-content: center; margin: 0 auto; border: 2px dashed #ddd;"><span style="font-size: 2rem;">👤</span></div>'}
+                </div>
+                <input type="file" id="photo-upload" accept="image/*" style="display: none;">
+                <button type="button" class="btn btn-outline btn-small" onclick="document.getElementById('photo-upload').click()">
+                  📷 Pilih Foto Baru
+                </button>
+                <div style="margin-top: 10px; font-size: 0.875rem; color: #6c757d;">
+                  Format: JPG, PNG, GIF (Max: 2MB)
+                </div>
+              </div>
+              <input type="url" id="edit-avatar" class="form-input" value="${emp.avatar_url || ''}" placeholder="Atau masukkan URL foto langsung">
+              <small class="text-muted">Upload foto atau masukkan URL foto profil</small>
             </div>
             <div class="form-group">
                <label class="form-label">Role / Jabatan</label>
@@ -364,6 +440,48 @@ function showEditEmployeeModal(emp) {
 
   overlay.querySelector('.modal-close').onclick = close;
   overlay.querySelector('#btn-edit-cancel').onclick = close;
+
+  // Photo upload handler
+  const photoUpload = document.getElementById('photo-upload');
+  const avatarInput = document.getElementById('edit-avatar');
+  const photoPreview = document.getElementById('current-photo-preview');
+  
+  photoUpload.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      showNotification('File harus berupa gambar (JPG, PNG, GIF)', 'danger');
+      return;
+    }
+    
+    if (file.size > 2 * 1024 * 1024) { // 2MB
+      showNotification('Ukuran file maksimal 2MB', 'danger');
+      return;
+    }
+    
+    try {
+      showLoading('Mengupload foto...');
+      
+      // Use the centralized upload function
+      const { data: photoUrl, error: uploadError } = await db.uploadEmployeePhoto(file);
+      
+      if (uploadError) throw uploadError;
+      
+      // Update preview and input
+      photoPreview.innerHTML = `<img src="${photoUrl}" alt="Foto Profil" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #007bff;">`;
+      avatarInput.value = photoUrl;
+      
+      hideLoading();
+      showNotification('Foto berhasil diupload!', 'success');
+      
+    } catch (error) {
+      hideLoading();
+      console.error('Upload error:', error);
+      showNotification('Gagal mengupload foto: ' + error.message, 'danger');
+    }
+  });
 
   overlay.querySelector('#btn-edit-save').onclick = async () => {
     const newName = document.getElementById('edit-name').value;
@@ -405,7 +523,8 @@ async function handleEditEmployee(id, updates) {
   }
 }
 
-async function handleAddEmployee(name, email, password, role) {
+async function handleAddEmployee(employeeData) {
+  const { name, email, password, role, avatar_url } = employeeData;
   showLoading('Mendaftarkan karyawan...');
 
   try {
@@ -448,6 +567,7 @@ async function handleAddEmployee(name, email, password, role) {
         name: name,
         role: role,
         status: 'active',
+        avatar_url: avatar_url || null, // Include avatar URL
         created_at: new Date().toISOString()
       });
 

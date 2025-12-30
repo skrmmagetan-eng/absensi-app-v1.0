@@ -636,6 +636,26 @@ export const db = {
         return { data: data.publicUrl };
     },
 
+    async uploadEmployeePhoto(file) {
+        // Compress first for better performance
+        const compressedFile = await compressImage(file);
+
+        const fileExt = compressedFile.name.split('.').pop();
+        const fileName = `employees/emp-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('app-assets')
+            .upload(fileName, compressedFile);
+
+        if (uploadError) return { error: uploadError };
+
+        const { data } = supabase.storage
+            .from('app-assets')
+            .getPublicUrl(fileName);
+
+        return { data: data.publicUrl };
+    },
+
     // Visits / Survey
     async logVisit(visitData) {
         // Ensure employee_id is set correctly (fix field naming)
