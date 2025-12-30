@@ -24,3 +24,14 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Temporary and debug files
+temp/
+*.tmp
+*.temp
+
+# Environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
