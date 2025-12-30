@@ -130,20 +130,21 @@ export class PWAUpdateManager {
       this.dismissUpdate();
     });
 
-    // Auto-dismiss after 30 seconds
-    setTimeout(() => {
-      if (document.getElementById('pwa-update-notification')) {
-        this.dismissUpdate();
-      }
-    }, 30000);
+    // HAPUS AUTO-DISMISS - Biarkan user yang memutuskan
+    // setTimeout(() => {
+    //   if (document.getElementById('pwa-update-notification')) {
+    //     this.dismissUpdate();
+    //   }
+    // }, 30000);
   }
 
   async applyUpdate() {
     console.log('🔄 Applying PWA update...');
     
-    // Show loading
+    // Show step-by-step progress
     const notification = document.getElementById('pwa-update-notification');
     if (notification) {
+      // Step 1: Preparing update
       notification.innerHTML = `
         <div style="
           position: fixed;
@@ -152,22 +153,55 @@ export class PWAUpdateManager {
           transform: translateX(-50%);
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
-          padding: 16px 24px;
+          padding: 20px 24px;
           border-radius: 12px;
           box-shadow: 0 8px 32px rgba(0,0,0,0.3);
           z-index: 10000;
           max-width: 90vw;
           text-align: center;
         ">
-          <div style="display: flex; align-items: center; gap: 12px; justify-content: center;">
+          <div style="display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: 12px;">
             <div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>
-            <div>Mengupdate aplikasi...</div>
+            <div><strong>Step 1/4:</strong> Mempersiapkan update...</div>
+          </div>
+          <div style="background: rgba(255,255,255,0.2); height: 4px; border-radius: 2px; overflow: hidden;">
+            <div style="background: white; height: 100%; width: 25%; transition: width 0.3s ease;"></div>
           </div>
         </div>
       `;
     }
 
     try {
+      // Step 2: Clearing cache
+      setTimeout(() => {
+        if (notification) {
+          notification.innerHTML = `
+            <div style="
+              position: fixed;
+              top: 20px;
+              left: 50%;
+              transform: translateX(-50%);
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              padding: 20px 24px;
+              border-radius: 12px;
+              box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+              z-index: 10000;
+              max-width: 90vw;
+              text-align: center;
+            ">
+              <div style="display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: 12px;">
+                <div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>
+                <div><strong>Step 2/4:</strong> Membersihkan cache lama...</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.2); height: 4px; border-radius: 2px; overflow: hidden;">
+                <div style="background: white; height: 100%; width: 50%; transition: width 0.3s ease;"></div>
+              </div>
+            </div>
+          `;
+        }
+      }, 500);
+
       // Clear all caches first
       if ('caches' in window) {
         const cacheNames = await caches.keys();
@@ -179,6 +213,36 @@ export class PWAUpdateManager {
         );
       }
 
+      // Step 3: Activating new version
+      setTimeout(() => {
+        if (notification) {
+          notification.innerHTML = `
+            <div style="
+              position: fixed;
+              top: 20px;
+              left: 50%;
+              transform: translateX(-50%);
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              padding: 20px 24px;
+              border-radius: 12px;
+              box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+              z-index: 10000;
+              max-width: 90vw;
+              text-align: center;
+            ">
+              <div style="display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: 12px;">
+                <div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>
+                <div><strong>Step 3/4:</strong> Mengaktifkan versi baru...</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.2); height: 4px; border-radius: 2px; overflow: hidden;">
+                <div style="background: white; height: 100%; width: 75%; transition: width 0.3s ease;"></div>
+              </div>
+            </div>
+          `;
+        }
+      }, 1500);
+
       // Tell service worker to skip waiting and activate
       if (this.waitingWorker) {
         this.waitingWorker.postMessage({ action: 'skipWaiting' });
@@ -186,26 +250,219 @@ export class PWAUpdateManager {
         navigator.serviceWorker.controller.postMessage({ action: 'skipWaiting' });
       }
 
-      // Force reload after a short delay
+      // Step 4: Completing update
       setTimeout(() => {
-        window.location.reload(true);
-      }, 1000);
+        if (notification) {
+          notification.innerHTML = `
+            <div style="
+              position: fixed;
+              top: 20px;
+              left: 50%;
+              transform: translateX(-50%);
+              background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+              color: white;
+              padding: 20px 24px;
+              border-radius: 12px;
+              box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+              z-index: 10000;
+              max-width: 90vw;
+              text-align: center;
+            ">
+              <div style="display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: 12px;">
+                <span style="font-size: 24px;">✅</span>
+                <div><strong>Step 4/4:</strong> Update selesai!</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.2); height: 4px; border-radius: 2px; overflow: hidden;">
+                <div style="background: white; height: 100%; width: 100%; transition: width 0.3s ease;"></div>
+              </div>
+              <div style="margin-top: 16px; font-size: 14px; opacity: 0.9;">
+                Aplikasi akan di-refresh dalam <span id="countdown">3</span> detik...
+              </div>
+              <div style="margin-top: 12px;">
+                <button id="refresh-now-btn" style="
+                  background: rgba(255,255,255,0.2);
+                  border: 1px solid rgba(255,255,255,0.3);
+                  color: white;
+                  padding: 8px 16px;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-size: 14px;
+                  font-weight: 500;
+                ">Refresh Sekarang</button>
+              </div>
+            </div>
+          `;
+
+          // Add refresh now button functionality
+          document.getElementById('refresh-now-btn').addEventListener('click', () => {
+            window.location.reload(true);
+          });
+
+          // Countdown timer
+          let countdown = 3;
+          const countdownEl = document.getElementById('countdown');
+          const countdownInterval = setInterval(() => {
+            countdown--;
+            if (countdownEl) {
+              countdownEl.textContent = countdown;
+            }
+            if (countdown <= 0) {
+              clearInterval(countdownInterval);
+              window.location.reload(true);
+            }
+          }, 1000);
+        }
+      }, 2500);
 
     } catch (error) {
       console.error('❌ Update failed:', error);
-      alert('Gagal mengupdate aplikasi. Silakan refresh manual.');
+      
+      // Show error with retry option
+      if (notification) {
+        notification.innerHTML = `
+          <div style="
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 20px 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            z-index: 10000;
+            max-width: 90vw;
+            text-align: center;
+          ">
+            <div style="display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: 12px;">
+              <span style="font-size: 24px;">❌</span>
+              <div><strong>Update Gagal!</strong></div>
+            </div>
+            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 16px;">
+              ${error.message || 'Terjadi kesalahan saat update'}
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: center;">
+              <button id="retry-update-btn" style="
+                background: rgba(255,255,255,0.2);
+                border: 1px solid rgba(255,255,255,0.3);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+              ">Coba Lagi</button>
+              <button id="manual-refresh-btn" style="
+                background: transparent;
+                border: 1px solid rgba(255,255,255,0.3);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+              ">Refresh Manual</button>
+            </div>
+          </div>
+        `;
+
+        // Add retry functionality
+        document.getElementById('retry-update-btn').addEventListener('click', () => {
+          this.applyUpdate();
+        });
+
+        document.getElementById('manual-refresh-btn').addEventListener('click', () => {
+          window.location.reload(true);
+        });
+      }
     }
   }
 
   dismissUpdate() {
     const notification = document.getElementById('pwa-update-notification');
     if (notification) {
-      notification.style.animation = 'slideOutUp 0.3s ease-in';
-      setTimeout(() => {
-        notification.remove();
-      }, 300);
+      // Show dismissal message with options
+      notification.innerHTML = `
+        <div style="
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+          color: white;
+          padding: 20px 24px;
+          border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+          z-index: 10000;
+          max-width: 90vw;
+          text-align: center;
+        ">
+          <div style="display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: 12px;">
+            <span style="font-size: 24px;">⏰</span>
+            <div><strong>Update Ditunda</strong></div>
+          </div>
+          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 16px;">
+            Update akan tersedia lagi saat Anda refresh halaman atau restart aplikasi
+          </div>
+          <div style="display: flex; gap: 8px; justify-content: center;">
+            <button id="update-later-ok-btn" style="
+              background: rgba(255,255,255,0.2);
+              border: 1px solid rgba(255,255,255,0.3);
+              color: white;
+              padding: 8px 16px;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 14px;
+              font-weight: 500;
+            ">OK, Mengerti</button>
+            <button id="update-now-later-btn" style="
+              background: transparent;
+              border: 1px solid rgba(255,255,255,0.3);
+              color: white;
+              padding: 8px 16px;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 14px;
+            ">Update Sekarang</button>
+          </div>
+        </div>
+      `;
+
+      // Add event listeners for new buttons
+      document.getElementById('update-later-ok-btn').addEventListener('click', () => {
+        notification.style.animation = 'slideOutUp 0.3s ease-in';
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            notification.remove();
+          }
+        }, 300);
+        this.updateAvailable = false;
+      });
+
+      document.getElementById('update-now-later-btn').addEventListener('click', () => {
+        this.applyUpdate();
+      });
+
+      // Auto-close after 10 seconds with countdown
+      let countdown = 10;
+      const countdownInterval = setInterval(() => {
+        const okBtn = document.getElementById('update-later-ok-btn');
+        if (okBtn && countdown > 0) {
+          okBtn.textContent = `OK, Mengerti (${countdown})`;
+          countdown--;
+        } else {
+          clearInterval(countdownInterval);
+          if (document.getElementById('pwa-update-notification')) {
+            notification.style.animation = 'slideOutUp 0.3s ease-in';
+            setTimeout(() => {
+              if (document.body.contains(notification)) {
+                notification.remove();
+              }
+            }, 300);
+            this.updateAvailable = false;
+          }
+        }
+      }, 1000);
     }
-    this.updateAvailable = false;
   }
 
   // Force clear all caches (for manual troubleshooting)
