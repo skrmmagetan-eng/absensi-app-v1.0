@@ -3,6 +3,7 @@ import { state } from '../lib/router.js';
 import { router } from '../lib/router.js';
 import { geo, showNotification, showLoading, hideLoading, createModal } from '../utils/helpers.js';
 import { renderNavbar, renderBottomNav } from '../components/navigation.js';
+import { sessionValidator } from '../utils/session-validator.js';
 import L from 'leaflet';
 
 let map = null;
@@ -60,9 +61,27 @@ export async function renderCustomersPage() {
 }
 
 async function loadCustomers() {
-  const user = state.getState('user');
-  const profile = state.getState('profile');
   const container = document.getElementById('customers-container');
+
+  // Validate user session using session validator
+  const sessionData = sessionValidator.validateUserSession(false);
+  if (!sessionData) {
+    container.innerHTML = `
+      <div class="text-center" style="padding: 2rem;">
+        <div style="color: var(--danger); margin-bottom: 1rem;">⚠️</div>
+        <h3>Sesi Tidak Valid</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1rem;">
+          Sesi pengguna tidak valid. Silakan login kembali.
+        </p>
+        <button class="btn btn-primary" onclick="window.location.hash='#login'">
+          Login Kembali
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  const { user, profile } = sessionData;
 
   showLoading('Memuat data pelanggan...');
 
@@ -578,7 +597,14 @@ async function handleAddCustomer(e) {
   const feedUnit = document.getElementById('feed-unit').value;
   
   const coordinateInfo = document.getElementById('coordinate-info');
-  const user = state.getState('user');
+  
+  // Validate user session using session validator
+  const sessionData = sessionValidator.validateForCriticalOperation('menambahkan pelanggan');
+  if (!sessionData) {
+    return;
+  }
+  
+  const { user } = sessionData;
 
   if (!coordinateInfo.dataset.lat || !coordinateInfo.dataset.lng) {
     showNotification('Tentukan lokasi pelanggan pada peta', 'warning');
@@ -1169,7 +1195,14 @@ async function handleLogVisit(customer) {
         const { data: photoUrl, error: uploadError } = await db.uploadVisitEvidence(photoFile);
         if (uploadError) throw uploadError;
 
-        const user = state.getState('user');
+        // Validate user session using session validator
+        const sessionData = sessionValidator.validateForCriticalOperation('mencatat kunjungan');
+        if (!sessionData) {
+          throw new Error('Sesi pengguna tidak valid untuk mencatat kunjungan.');
+        }
+        
+        const { user } = sessionData;
+        
         const { error } = await db.logVisit({
           customer_id: customer.id,
           user_id: user.id,
