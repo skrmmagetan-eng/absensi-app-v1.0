@@ -1,6 +1,8 @@
 // Deployment Notification System
 // Shows users about successful deployment and new features
 
+import { notificationManager } from './notification-manager.js';
+
 export class DeploymentNotificationManager {
   constructor() {
     this.DEPLOYMENT_KEY = 'deployment_v2_2_0_notified';
@@ -24,12 +26,27 @@ export class DeploymentNotificationManager {
   }
 
   createDeploymentNotification() {
+    // Check if there's already a priority notification active
+    if (notificationManager.hasPriorityNotification()) {
+      console.log('⏳ Deployment notification queued - waiting for current notification to finish');
+      notificationManager.queueNotification({
+        action: () => this.showDeploymentNotification(),
+        spacing: 3000
+      });
+      return;
+    }
+
+    this.showDeploymentNotification();
+  }
+
+  showDeploymentNotification() {
     // Remove existing notification if any
     const existingNotification = document.getElementById('deployment-notification');
     if (existingNotification) existingNotification.remove();
 
     const notification = document.createElement('div');
     notification.id = 'deployment-notification';
+    notification.setAttribute('data-notification-type', 'deployment');
     notification.innerHTML = `
       <div style="
         position: fixed;
@@ -121,10 +138,16 @@ export class DeploymentNotificationManager {
 
     document.body.appendChild(notification);
 
+    // Register as priority notification
+    notificationManager.registerPriorityNotification('deployment', notification);
+
     // Event listeners
     const closeNotification = () => {
       notification.style.animation = 'slideOutRight 0.3s ease-in forwards';
-      setTimeout(() => notification.remove(), 300);
+      setTimeout(() => {
+        notification.remove();
+        notificationManager.clearPriorityNotification('deployment');
+      }, 300);
       localStorage.setItem(this.DEPLOYMENT_KEY, 'true');
     };
 
@@ -141,12 +164,12 @@ export class DeploymentNotificationManager {
       }, 300);
     });
 
-    // Auto dismiss after 15 seconds
+    // Extended auto dismiss - 30 seconds instead of 15
     setTimeout(() => {
       if (document.getElementById('deployment-notification')) {
         closeNotification();
       }
-    }, 15000);
+    }, 30000);
   }
 
   // Show deployment status in console

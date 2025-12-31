@@ -1,5 +1,7 @@
 // Version Management and Update Notification System
 
+import { notificationManager } from './notification-manager.js';
+
 const APP_VERSION = '2.2.0-quick-order-system'; // Added Quick Order from Catalog system
 const VERSION_KEY = 'app_version';
 const UPDATE_DISMISSED_KEY = 'update_dismissed';
@@ -66,12 +68,27 @@ export const versionManager = {
   },
 
   displayUpdateBanner(oldVersion, newVersion) {
+    // Check if there's already a priority notification active
+    if (notificationManager.hasPriorityNotification()) {
+      console.log('⏳ Version update notification queued - waiting for current notification to finish');
+      notificationManager.queueNotification({
+        action: () => this.showVersionBanner(oldVersion, newVersion),
+        spacing: 3000
+      });
+      return;
+    }
+
+    this.showVersionBanner(oldVersion, newVersion);
+  },
+
+  showVersionBanner(oldVersion, newVersion) {
     // Remove existing banner if any
     const existingBanner = document.getElementById('update-banner');
     if (existingBanner) existingBanner.remove();
 
     const banner = document.createElement('div');
     banner.id = 'update-banner';
+    banner.setAttribute('data-notification-type', 'version-update');
     banner.innerHTML = `
       <div style="
         position: fixed;
@@ -83,7 +100,7 @@ export const versionManager = {
         padding: 16px 24px;
         border-radius: 12px;
         box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-        z-index: 9999;
+        z-index: 10000;
         display: flex;
         align-items: center;
         gap: 16px;
@@ -139,7 +156,19 @@ export const versionManager = {
 
     document.body.appendChild(banner);
 
+    // Register as priority notification
+    notificationManager.registerPriorityNotification('version-update', banner);
+
     // Event listeners
+    const closeBanner = () => {
+      this.dismissUpdate();
+      banner.style.animation = 'slideUp 0.3s ease-in forwards';
+      setTimeout(() => {
+        banner.remove();
+        notificationManager.clearPriorityNotification('version-update');
+      }, 300);
+    };
+
     document.getElementById('update-reload-btn').addEventListener('click', () => {
       this.setStoredVersion(newVersion);
       localStorage.removeItem(UPDATE_DISMISSED_KEY);
@@ -155,20 +184,14 @@ export const versionManager = {
       }, 500);
     });
 
-    document.getElementById('update-dismiss-btn').addEventListener('click', () => {
-      this.dismissUpdate();
-      banner.style.animation = 'slideUp 0.3s ease-in forwards';
-      setTimeout(() => banner.remove(), 300);
-    });
+    document.getElementById('update-dismiss-btn').addEventListener('click', closeBanner);
 
-    // Auto dismiss after 25 seconds
+    // Extended auto dismiss - 60 seconds instead of 45
     setTimeout(() => {
       if (document.getElementById('update-banner')) {
-        this.dismissUpdate();
-        banner.style.animation = 'slideUp 0.3s ease-in forwards';
-        setTimeout(() => banner.remove(), 300);
+        closeBanner();
       }
-    }, 25000);
+    }, 60000);
   },
 
   renderVersionFooter() {

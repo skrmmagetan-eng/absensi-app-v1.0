@@ -4,6 +4,7 @@ import { themeManager } from './utils/theme.js';
 import { versionManager } from './utils/version.js';
 import { updateNotificationManager } from './utils/update-notification.js';
 import { deploymentNotificationManager } from './utils/deployment-notification.js';
+import { notificationManager } from './utils/notification-manager.js';
 import { authChecker } from './utils/auth-check.js';
 import { roleSecurity } from './utils/role-security.js';
 import { PWAUpdateManager, clearAppCache, checkForUpdates } from './utils/pwa-update-manager.js';
@@ -439,18 +440,29 @@ async function init() {
     // Log deployment status
     deploymentNotificationManager.logDeploymentStatus();
     
-    // Check for app updates
-    versionManager.showUpdateNotification();
+    // Initialize notification manager
+    console.log('🔔 Initializing notification system...');
     
-    // Show deployment success notification
-    setTimeout(() => {
-      deploymentNotificationManager.showDeploymentSuccess();
-    }, 1000);
-    
-    // Show Quick Order feature notification for new/updated users
-    setTimeout(() => {
-      updateNotificationManager.showUpdateNotification();
-    }, 4000);
+    // Check for version updates (highest priority)
+    const updateCheck = versionManager.checkForUpdate();
+    if (updateCheck.hasUpdate && !versionManager.isUpdateDismissed() && versionManager.shouldShowNotification()) {
+      console.log('📱 Showing version update notification');
+      versionManager.showUpdateNotification();
+    }
+    // Check for deployment notifications (medium priority)
+    else if (deploymentNotificationManager.shouldShowDeploymentNotification()) {
+      console.log('🚀 Showing deployment notification');
+      setTimeout(() => {
+        deploymentNotificationManager.showDeploymentSuccess();
+      }, 1500);
+    }
+    // Check for feature notifications (lowest priority)
+    else if (updateNotificationManager.shouldShowQuickOrderIntro()) {
+      console.log('✨ Queueing feature notification');
+      setTimeout(() => {
+        updateNotificationManager.showUpdateNotification();
+      }, 3000);
+    }
     
     // Check auth status only if app wasn't closed
     if (!securityManager.shouldRequireLogin()) {

@@ -86,9 +86,16 @@ export async function renderCatalogPage() {
   setupOfflineSupport();
   setupAnalyticsTracking();
   
-  // Show Quick Order spotlight for new users
+  // Show Quick Order spotlight for new users (only if no priority notifications)
   import('../utils/update-notification.js').then(({ updateNotificationManager }) => {
-    updateNotificationManager.showCatalogSpotlight();
+    import('../utils/notification-manager.js').then(({ notificationManager }) => {
+      // Only show spotlight if no priority notifications are active
+      if (!notificationManager.hasPriorityNotification()) {
+        updateNotificationManager.showCatalogSpotlight();
+      } else {
+        console.log('⏳ Catalog spotlight skipped - priority notification active');
+      }
+    });
   }).catch(err => console.log('Spotlight notification not available:', err));
 }
 
