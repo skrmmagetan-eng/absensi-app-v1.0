@@ -47,9 +47,10 @@ export function renderNavbar() {
           </div>
         </div>
 
-        <!-- Mobile Logout Button (Visible only on mobile) -->
+        <!-- Mobile Logout Button (Visible only on mobile devices) -->
         <div class="navbar-right-mobile">
-          <button class="btn btn-ghost btn-icon" id="mobile-logout-btn" title="Logout" style="font-size: 1.1rem; color: var(--danger);">
+          <button class="btn btn-ghost btn-icon" id="mobile-logout-btn" title="Logout" 
+                  style="font-size: 1.1rem; color: var(--danger);">
             🚪
           </button>
         </div>
@@ -255,11 +256,11 @@ export function setupNavigationEvents() {
     });
   });
 
-  // Logout Handlers
+  // Logout Event Handlers - Includes desktop, sidebar, and mobile logout buttons
   const logoutBtns = [
-    document.getElementById('logout-btn'), 
-    document.getElementById('sidebar-logout-btn'),
-    document.getElementById('mobile-logout-btn') // Add mobile logout button
+    document.getElementById('logout-btn'),           // Desktop logout
+    document.getElementById('sidebar-logout-btn'),   // Sidebar logout  
+    document.getElementById('mobile-logout-btn')     // Mobile header logout
   ];
   logoutBtns.forEach(btn => {
     if (btn) btn.addEventListener('click', handleSmartLogout);

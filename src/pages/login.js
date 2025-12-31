@@ -193,7 +193,8 @@ async function handleLogin(e) {
     sessionStorage.setItem('app_session_start', Date.now().toString());
     localStorage.removeItem('app_last_close_time');
     
-    // Notify security manager that login was successful - DISABLED
+    // Security manager integration disabled for better user experience
+    // Original security monitoring was too intrusive for users
     // if (window.securityManager) {
     //   window.securityManager.startSession();
     //   window.securityManager.clearClosureFlag();

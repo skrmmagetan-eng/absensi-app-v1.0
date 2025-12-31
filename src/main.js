@@ -42,9 +42,11 @@ const SECURITY_CONFIG = {
 };
 
 // Security Manager
-// Security Manager - DISABLED
+// Security Manager - DISABLED FOR BETTER USER EXPERIENCE
+// All security monitoring functions are disabled to prevent intrusive notifications
 class SecurityManager {
   constructor() {
+    // All properties set to null/false - no active monitoring
     this.sessionStartTime = null;
     this.lastActivityTime = null;
     this.visibilityTimer = null;
@@ -53,47 +55,20 @@ class SecurityManager {
     this.wasAppClosed = false;
     this.isActive = false; // Always false - security monitoring disabled
     
-    // Security monitoring is disabled - no app closure check
-    console.log('🔓 Security monitoring is disabled');
+    console.log('🔓 Security monitoring is disabled for better UX');
   }
 
-  // Start security monitoring - DISABLED
-  startSecurityMonitoring() {
-    console.log('🔓 Security monitoring is disabled - no action taken');
-    return; // Do nothing
-  }
-
-  // Stop security monitoring - DISABLED  
-  stopSecurityMonitoring() {
-    console.log('🔓 Security monitoring is disabled - no action taken');
-    return; // Do nothing
-  }
-
-  // Start session - DISABLED
-  startSession() {
-    return; // Do nothing
-  }
-
-  // Clear closure flag - DISABLED
-  clearClosureFlag() {
-    return; // Do nothing
-  }
-
-  // Should require login - DISABLED (always false)
-  shouldRequireLogin() {
-    return false; // Never require login due to security
-  }
-
-  // Force logout - DISABLED
-  async forceLogout(reason) {
+  // All security methods disabled - return immediately without action
+  startSecurityMonitoring() { return; }
+  stopSecurityMonitoring() { return; }
+  startSession() { return; }
+  clearClosureFlag() { return; }
+  shouldRequireLogin() { return false; }
+  async forceLogout(reason) { 
     console.log('🔓 Force logout disabled:', reason);
-    return; // Do nothing
+    return; 
   }
-
-  init() {
-    // Disabled - no initialization
-  }
-
+  init() { return; }
   checkAppClosure() {
     const sessionToken = sessionStorage.getItem('app_session_active');
     const lastCloseTime = localStorage.getItem('app_last_close_time');
@@ -370,6 +345,9 @@ async function handleRouting() {
   let user = state.getState('user');
   let profile = state.getState('profile');
 
+  // SECURITY CHECKS DISABLED - All security-related checks are commented out
+  // This improves user experience by removing intrusive session monitoring
+  
   // Security Check: DISABLED - no forced login
   // if (securityManager.shouldRequireLogin() && path !== 'login') {
   //   console.log('🔒 App was closed - forcing login');
@@ -449,7 +427,7 @@ async function handleRouting() {
 
   // Guard: Redirect logged in user away from login
   if (user && path === 'login') {
-    // Clear closure flag when successfully accessing login - DISABLED
+    // Security manager calls disabled for better UX
     // securityManager.clearClosureFlag();
     
     if (profile?.role === 'admin' || profile?.role === 'manager') window.location.hash = '#admin';
@@ -466,10 +444,8 @@ async function handleRouting() {
   // Find handler
   const handler = routes[path];
   if (handler) {
-    // Clear closure flag when successfully navigating to authenticated pages - DISABLED
-    // if (user && path !== 'login') {
-    //   securityManager.clearClosureFlag();
-    // }
+    // Security manager calls disabled for better UX
+    // securityManager.clearClosureFlag();
     
     // Inject "Secure Area" indicator for admin
     if (path.startsWith('admin')) {
@@ -517,10 +493,8 @@ async function init() {
         updateNotificationManager.showUpdateNotification();
       }, 3000);
     }
-    
-    // Check auth status - security check disabled
-    // if (!securityManager.shouldRequireLogin()) {
-      const user = await auth.getUser();
+    // Auth status check - security monitoring disabled for better UX
+    const user = await auth.getUser();
 
       if (user) {
         const { data: profile } = await db.getUserProfile(user.id);
@@ -528,8 +502,8 @@ async function init() {
         // Validate profile status
         if (profile?.status === 'inactive') {
           console.log('🔒 User account is inactive');
-          // await securityManager.forceLogout('Account is inactive'); // DISABLED
-          await auth.logout(); // Use regular logout instead
+          // Use regular logout instead of security manager
+          await auth.logout();
           return;
         }
         
@@ -538,11 +512,9 @@ async function init() {
           profile,
           isAuthenticated: true
         });
-        
-        // Start security monitoring after successful login - DISABLED
+        // Security monitoring disabled for better user experience
         // securityManager.startSecurityMonitoring();
       }
-    // } // End of disabled security check
 
     // Setup auth listener for real-time changes
     authChecker.setupAuthListener();

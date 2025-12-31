@@ -525,15 +525,16 @@ a:hover {
   background-clip: text;
 }
 
+/* Navigation Menu Styles */
 .navbar-menu {
   display: flex;
   gap: var(--spacing-md);
   align-items: center;
 }
 
-/* Mobile Logout Button - Only visible on mobile */
+/* Mobile Logout Button - Hidden on desktop, visible on mobile */
 .navbar-right-mobile {
-  display: none;
+  display: none; /* Hidden by default (desktop) */
 }
 
 @media (max-width: 768px) {
@@ -1247,12 +1248,11 @@ a:hover {
     padding-bottom: calc(var(--spacing-lg) + 60px);
   }
 
-  /* Show mobile logout button on mobile */
+  /* Mobile Navigation: Show logout button, hide desktop menu */
   .navbar-right-mobile {
     display: flex !important;
   }
   
-  /* Hide desktop menu on mobile */
   .navbar-menu {
     display: none !important;
   }
