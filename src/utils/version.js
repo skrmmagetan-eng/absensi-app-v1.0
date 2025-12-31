@@ -1,6 +1,6 @@
 // Version Management and Update Notification System
 
-const APP_VERSION = '2.1.0-livestock-tracking'; // Added livestock population & feed tracking
+const APP_VERSION = '2.2.0-quick-order-system'; // Added Quick Order from Catalog system
 const VERSION_KEY = 'app_version';
 const UPDATE_DISMISSED_KEY = 'update_dismissed';
 const LAST_NOTIFICATION_KEY = 'last_notification_time';
@@ -91,10 +91,10 @@ export const versionManager = {
         animation: slideDown 0.4s ease-out;
         backdrop-filter: blur(10px);
       ">
-        <span style="font-size: 2rem;">🐄</span>
+        <span style="font-size: 2rem;">🛒</span>
         <div style="flex: 1;">
           <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px;">Fitur Baru Tersedia!</div>
-          <div style="font-size: 13px; opacity: 0.95; margin-bottom: 2px;">📊 Tracking Populasi & Pakan Ternak</div>
+          <div style="font-size: 13px; opacity: 0.95; margin-bottom: 2px;">🚀 Quick Order dari Katalog</div>
           <div style="font-size: 11px; opacity: 0.8;">v${oldVersion} → v${newVersion}</div>
         </div>
         <div style="display: flex; gap: 8px;">
@@ -130,6 +130,10 @@ export const versionManager = {
           from { opacity: 0; transform: translate(-50%, -30px) scale(0.9); }
           to { opacity: 1; transform: translate(-50%, 0) scale(1); }
         }
+        @keyframes slideUp {
+          from { opacity: 1; transform: translate(-50%, 0) scale(1); }
+          to { opacity: 0; transform: translate(-50%, -30px) scale(0.9); }
+        }
       </style>
     `;
 
@@ -157,14 +161,14 @@ export const versionManager = {
       setTimeout(() => banner.remove(), 300);
     });
 
-    // Auto dismiss after 20 seconds
+    // Auto dismiss after 25 seconds
     setTimeout(() => {
       if (document.getElementById('update-banner')) {
         this.dismissUpdate();
         banner.style.animation = 'slideUp 0.3s ease-in forwards';
         setTimeout(() => banner.remove(), 300);
       }
-    }, 20000);
+    }, 25000);
   },
 
   renderVersionFooter() {

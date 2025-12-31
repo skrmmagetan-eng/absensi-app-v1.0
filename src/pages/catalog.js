@@ -35,7 +35,7 @@ export async function renderCatalogPage() {
     </div>
 
     <!-- Floating Cart Summary -->
-    <div class="floating-cart" id="floating-cart">
+    <div class="floating-cart" id="floating-cart" data-quick-order-btn>
       <div class="floating-cart-content" onclick="openCartModal()">
         <div class="cart-icon">🛒</div>
         <div class="cart-info">
@@ -85,6 +85,11 @@ export async function renderCatalogPage() {
   setupMobileOptimizations();
   setupOfflineSupport();
   setupAnalyticsTracking();
+  
+  // Show Quick Order spotlight for new users
+  import('../utils/update-notification.js').then(({ updateNotificationManager }) => {
+    updateNotificationManager.showCatalogSpotlight();
+  }).catch(err => console.log('Spotlight notification not available:', err));
 }
 
 async function loadCatalog() {
