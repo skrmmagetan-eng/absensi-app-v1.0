@@ -12,6 +12,11 @@ export const versionManager = {
     return APP_VERSION;
   },
 
+  getCleanVersion() {
+    // Return only the version number without suffix
+    return APP_VERSION.split('-')[0];
+  },
+
   getStoredVersion() {
     return localStorage.getItem(VERSION_KEY);
   },

@@ -15,8 +15,9 @@ export async function renderAdminDashboard() {
       <div class="container">
         <div class="mb-lg flex justify-between items-center wrap-mobile">
           <div>
-            <h1>${isManager ? 'Manager Dashboard' : 'Admin Dashboard'} 📊</h1>
-            <p style="color: var(--text-muted);">Overview performa perusahaan & karyawan</p>
+            <h1>${profile?.name || 'User'} 📊</h1>
+            <p style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.9rem;">${profile?.role || 'Role'}</p>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">Overview performa perusahaan & karyawan</p>
           </div>
           <div class="flex gap-sm items-center mt-sm-mobile">
              <label class="text-xs text-muted font-bold uppercase" style="letter-spacing: 1px;">Periode:</label>

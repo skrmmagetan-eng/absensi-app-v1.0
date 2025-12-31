@@ -65,7 +65,7 @@ export function renderLoginPage() {
               "Transforming attendance data into workforce intelligence."
             </p>
             <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; opacity: 0.8;">
-              v${versionManager.getCurrentVersion()}
+              v${versionManager.getCleanVersion()}
             </div>
           </div>
         </div>

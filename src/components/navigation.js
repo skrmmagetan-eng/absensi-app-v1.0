@@ -99,7 +99,7 @@ export function renderNavbar() {
             
             <!-- Version Info in Sidebar -->
             <div style="text-align: center; padding: 0.5rem; font-size: 0.7rem; color: var(--text-muted); opacity: 0.7; border-top: 1px solid var(--border-color); margin-top: 0.5rem;">
-              Absensi App v${versionManager.getCurrentVersion()}
+              Absensi App v${versionManager.getCleanVersion()}
             </div>
          </div>
       </div>

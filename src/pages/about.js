@@ -29,7 +29,7 @@ export async function renderAboutPage() {
               </div>
               <div class="info-item">
                 <span class="info-label">Versi Saat Ini:</span>
-                <span class="info-value" id="current-version">${versionManager.getCurrentVersion()}</span>
+                <span class="info-value" id="current-version">${versionManager.getCleanVersion()}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Terakhir Update:</span>
