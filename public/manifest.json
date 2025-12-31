@@ -1,8 +1,8 @@
 {
     "name": "SKRM - Sistem Kunjungan & Riwayat Medis",
     "short_name": "SKRM",
-    "version": "2.2.0",
-    "version_name": "2.2.0-quick-order-system",
+    "version": "2.2.1",
+    "version_name": "2.2.1-hotfix-notifications-session",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0a0e27",

@@ -2,7 +2,7 @@
 
 import { notificationManager } from './notification-manager.js';
 
-const APP_VERSION = '2.2.0-quick-order-system'; // Added Quick Order from Catalog system
+const APP_VERSION = '2.2.1-hotfix-notifications-session'; // Fixed notifications & session timeout
 const VERSION_KEY = 'app_version';
 const UPDATE_DISMISSED_KEY = 'update_dismissed';
 const LAST_NOTIFICATION_KEY = 'last_notification_time';
@@ -108,10 +108,10 @@ export const versionManager = {
         animation: slideDown 0.4s ease-out;
         backdrop-filter: blur(10px);
       ">
-        <span style="font-size: 2rem;">🛒</span>
+        <span style="font-size: 2rem;">🔧</span>
         <div style="flex: 1;">
-          <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px;">Fitur Baru Tersedia!</div>
-          <div style="font-size: 13px; opacity: 0.95; margin-bottom: 2px;">🚀 Quick Order dari Katalog</div>
+          <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px;">Update Tersedia!</div>
+          <div style="font-size: 13px; opacity: 0.95; margin-bottom: 2px;">🔧 Perbaikan Notifikasi & Session</div>
           <div style="font-size: 11px; opacity: 0.8;">v${oldVersion} → v${newVersion}</div>
         </div>
         <div style="display: flex; gap: 8px;">

@@ -5,8 +5,8 @@ import { notificationManager } from './notification-manager.js';
 
 export class DeploymentNotificationManager {
   constructor() {
-    this.DEPLOYMENT_KEY = 'deployment_v2_2_0_notified';
-    this.DEPLOYMENT_VERSION = '2.2.0';
+    this.DEPLOYMENT_KEY = 'deployment_v2_2_1_notified';
+    this.DEPLOYMENT_VERSION = '2.2.1';
     this.DEPLOYMENT_DATE = new Date().toISOString();
   }
 
@@ -69,7 +69,7 @@ export class DeploymentNotificationManager {
               Deployment Berhasil!
             </div>
             <div style="font-size: 14px; opacity: 0.95; margin-bottom: 12px;">
-              SKRM v${this.DEPLOYMENT_VERSION} telah berhasil di-deploy ke production dengan fitur Quick Order yang baru.
+              SKRM v${this.DEPLOYMENT_VERSION} telah berhasil di-deploy dengan perbaikan notifikasi dan session timeout.
             </div>
             <div style="display: flex; gap: 8px; margin-top: 12px;">
               <button id="explore-features-btn" style="
@@ -83,7 +83,7 @@ export class DeploymentNotificationManager {
                 cursor: pointer;
                 transition: all 0.2s;
               ">
-                🛒 Coba Fitur Baru
+                🔧 Coba Perbaikan
               </button>
               <button id="dismiss-deployment-btn" style="
                 background: transparent;

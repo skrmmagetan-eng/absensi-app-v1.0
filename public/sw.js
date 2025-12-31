@@ -1,7 +1,7 @@
-const CACHE_NAME = 'skrm-v2.2.0-' + Date.now();
-const STATIC_CACHE = 'skrm-static-v2.2.0';
-const DYNAMIC_CACHE = 'skrm-dynamic-v2.2.0';
-const OFFLINE_CACHE = 'skrm-offline-v2.2.0';
+const CACHE_NAME = 'skrm-v2.2.1-' + Date.now();
+const STATIC_CACHE = 'skrm-static-v2.2.1';
+const DYNAMIC_CACHE = 'skrm-dynamic-v2.2.1';
+const OFFLINE_CACHE = 'skrm-offline-v2.2.1';
 
 const ASSETS_TO_CACHE = [
     '/',
