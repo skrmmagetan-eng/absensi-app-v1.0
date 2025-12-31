@@ -32,6 +32,7 @@ import { renderHistoryPage } from './pages/history.js';
 import { renderAdminHistoryPage } from './pages/admin-history.js';
 import { renderTargetsPage } from './pages/targets.js';
 import { renderAdminTargetsPage } from './pages/admin-targets.js';
+import { renderAboutPage } from './pages/about.js';
 
 // Security Configuration
 const SECURITY_CONFIG = {
@@ -49,13 +50,18 @@ class SecurityManager {
     this.inactivityTimer = null;
     this.isTabVisible = true;
     this.wasAppClosed = false;
+    this.isActive = false; // Add flag to control when security is active
     
-    this.init();
+    // Only check app closure on init, don't start timers yet
+    this.checkAppClosure();
   }
 
-  init() {
-    // Check if app was properly closed (no session token)
-    this.checkAppClosure();
+  // Start security monitoring (call after successful login)
+  startSecurityMonitoring() {
+    if (this.isActive) return; // Already active
+    
+    console.log('🔒 Starting security monitoring...');
+    this.isActive = true;
     
     // Set up session tracking
     this.startSession();
@@ -71,6 +77,24 @@ class SecurityManager {
     
     // Set up periodic security checks
     this.setupPeriodicChecks();
+  }
+
+  // Stop security monitoring (call on logout)
+  stopSecurityMonitoring() {
+    console.log('🔓 Stopping security monitoring...');
+    this.isActive = false;
+    
+    // Clear all timers
+    if (this.visibilityTimer) clearTimeout(this.visibilityTimer);
+    if (this.inactivityTimer) clearTimeout(this.inactivityTimer);
+    if (this.periodicCheckInterval) clearInterval(this.periodicCheckInterval);
+    
+    // Remove event listeners
+    this.removeEventListeners();
+  }
+
+  init() {
+    // Removed automatic initialization - now manual
   }
 
   checkAppClosure() {
@@ -98,7 +122,9 @@ class SecurityManager {
   }
 
   setupVisibilityTracking() {
-    document.addEventListener('visibilitychange', () => {
+    this.visibilityHandler = () => {
+      if (!this.isActive) return;
+      
       if (document.hidden) {
         this.isTabVisible = false;
         this.onTabHidden();
@@ -106,32 +132,58 @@ class SecurityManager {
         this.isTabVisible = true;
         this.onTabVisible();
       }
-    });
+    };
+    
+    document.addEventListener('visibilitychange', this.visibilityHandler);
   }
 
   setupActivityTracking() {
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
     
-    events.forEach(event => {
-      document.addEventListener(event, () => {
+    this.activityHandler = () => {
+      if (this.isActive) {
         this.updateActivity();
-      }, { passive: true });
+      }
+    };
+    
+    events.forEach(event => {
+      document.addEventListener(event, this.activityHandler, { passive: true });
     });
   }
 
   setupBeforeUnloadTracking() {
-    window.addEventListener('beforeunload', () => {
-      // Mark app as being closed
-      sessionStorage.removeItem('app_session_active');
-      localStorage.setItem('app_last_close_time', Date.now().toString());
-    });
+    this.beforeUnloadHandler = () => {
+      if (this.isActive) {
+        // Mark app as being closed
+        sessionStorage.removeItem('app_session_active');
+        localStorage.setItem('app_last_close_time', Date.now().toString());
+      }
+    };
+    
+    window.addEventListener('beforeunload', this.beforeUnloadHandler);
   }
 
   setupPeriodicChecks() {
     // Check every minute for security violations
-    setInterval(() => {
-      this.performSecurityCheck();
+    this.periodicCheckInterval = setInterval(() => {
+      if (this.isActive) {
+        this.performSecurityCheck();
+      }
     }, 60 * 1000);
+  }
+
+  removeEventListeners() {
+    // Remove activity event listeners
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => {
+      document.removeEventListener(event, this.activityHandler);
+    });
+    
+    // Remove visibility change listener
+    document.removeEventListener('visibilitychange', this.visibilityHandler);
+    
+    // Remove beforeunload listener
+    window.removeEventListener('beforeunload', this.beforeUnloadHandler);
   }
 
   updateActivity() {
@@ -175,6 +227,8 @@ class SecurityManager {
   }
 
   performSecurityCheck() {
+    if (!this.isActive) return;
+    
     const user = state.getState('user');
     const profile = state.getState('profile');
     
@@ -237,11 +291,12 @@ class SecurityManager {
   }
 
   async forceLogout(reason) {
+    if (!this.isActive) return; // Don't show notifications if security is not active
+    
     console.log(`🔒 Force logout: ${reason}`);
     
-    // Clear all timers
-    if (this.visibilityTimer) clearTimeout(this.visibilityTimer);
-    if (this.inactivityTimer) clearTimeout(this.inactivityTimer);
+    // Stop security monitoring
+    this.stopSecurityMonitoring();
     
     // Clear session data
     sessionStorage.clear();
@@ -257,7 +312,7 @@ class SecurityManager {
     // Clear application state
     state.reset();
     
-    // Show notification and redirect
+    // Show notification and redirect (only if user was actually logged in)
     if (reason !== 'Session expired') {
       alert(`🔒 Sesi berakhir: ${reason}. Silakan login kembali.`);
     }
@@ -303,6 +358,7 @@ const routes = {
   'riwayat': renderHistoryPage,
   'targets': renderTargetsPage,
   'admin/targets': renderAdminTargetsPage,
+  'tentang': renderAboutPage,
 };
 
 // Expose routes globally for manual routing from login
@@ -484,8 +540,8 @@ async function init() {
           isAuthenticated: true
         });
         
-        // Start security session
-        securityManager.startSession();
+        // Start security monitoring after successful login
+        securityManager.startSecurityMonitoring();
       }
     }
 

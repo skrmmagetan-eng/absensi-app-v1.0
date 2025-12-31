@@ -292,17 +292,8 @@ export function setupNavigationEvents() {
   const aboutBtn = document.getElementById('sidebar-about-btn');
   if (aboutBtn) {
     aboutBtn.addEventListener('click', () => {
-      const profile = state.getState('profile');
-      const brand = branding.getLocal();
-      
-      alert(`📱 ${brand.name || 'SKRM Absensi'}\n\n` +
-            `🔢 Versi: ${versionManager.getCurrentVersion()}\n` +
-            `👤 User: ${profile?.name || 'Unknown'}\n` +
-            `🏷️ Role: ${profile?.role || 'employee'}\n` +
-            `📧 Email: ${profile?.email || 'Unknown'}\n\n` +
-            `📅 Build: ${new Date().getFullYear()}\n` +
-            `🏢 SKRM Management System\n\n` +
-            `"Transforming attendance data into workforce intelligence."`);
+      closeSidebar();
+      window.location.hash = '#tentang';
     });
   }
 }
