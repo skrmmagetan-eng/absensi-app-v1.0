@@ -531,6 +531,22 @@ a:hover {
   align-items: center;
 }
 
+/* Mobile Logout Button - Only visible on mobile */
+.navbar-right-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .navbar-right-mobile {
+    display: flex;
+    align-items: center;
+  }
+  
+  .navbar-menu {
+    display: none;
+  }
+}
+
 .nav-link {
   padding: 0.5rem 1rem;
   border-radius: var(--radius-md);
@@ -1229,6 +1245,16 @@ a:hover {
   .page {
     padding: var(--spacing-md);
     padding-bottom: calc(var(--spacing-lg) + 60px);
+  }
+
+  /* Show mobile logout button on mobile */
+  .navbar-right-mobile {
+    display: flex !important;
+  }
+  
+  /* Hide desktop menu on mobile */
+  .navbar-menu {
+    display: none !important;
   }
 
   .bottom-nav {

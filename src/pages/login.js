@@ -193,11 +193,11 @@ async function handleLogin(e) {
     sessionStorage.setItem('app_session_start', Date.now().toString());
     localStorage.removeItem('app_last_close_time');
     
-    // Notify security manager that login was successful
-    if (window.securityManager) {
-      window.securityManager.startSession();
-      window.securityManager.clearClosureFlag();
-    }
+    // Notify security manager that login was successful - DISABLED
+    // if (window.securityManager) {
+    //   window.securityManager.startSession();
+    //   window.securityManager.clearClosureFlag();
+    // }
 
     // 5. Remember Me Logic (Local Storage)
     const rememberMe = document.getElementById('remember-me').checked;

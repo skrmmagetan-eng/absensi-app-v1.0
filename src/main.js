@@ -42,6 +42,7 @@ const SECURITY_CONFIG = {
 };
 
 // Security Manager
+// Security Manager - DISABLED
 class SecurityManager {
   constructor() {
     this.sessionStartTime = null;
@@ -50,51 +51,47 @@ class SecurityManager {
     this.inactivityTimer = null;
     this.isTabVisible = true;
     this.wasAppClosed = false;
-    this.isActive = false; // Add flag to control when security is active
+    this.isActive = false; // Always false - security monitoring disabled
     
-    // Only check app closure on init, don't start timers yet
-    this.checkAppClosure();
+    // Security monitoring is disabled - no app closure check
+    console.log('🔓 Security monitoring is disabled');
   }
 
-  // Start security monitoring (call after successful login)
+  // Start security monitoring - DISABLED
   startSecurityMonitoring() {
-    if (this.isActive) return; // Already active
-    
-    console.log('🔒 Starting security monitoring...');
-    this.isActive = true;
-    
-    // Set up session tracking
-    this.startSession();
-    
-    // Set up visibility change detection
-    this.setupVisibilityTracking();
-    
-    // Set up activity tracking
-    this.setupActivityTracking();
-    
-    // Set up beforeunload detection
-    this.setupBeforeUnloadTracking();
-    
-    // Set up periodic security checks
-    this.setupPeriodicChecks();
+    console.log('🔓 Security monitoring is disabled - no action taken');
+    return; // Do nothing
   }
 
-  // Stop security monitoring (call on logout)
+  // Stop security monitoring - DISABLED  
   stopSecurityMonitoring() {
-    console.log('🔓 Stopping security monitoring...');
-    this.isActive = false;
-    
-    // Clear all timers
-    if (this.visibilityTimer) clearTimeout(this.visibilityTimer);
-    if (this.inactivityTimer) clearTimeout(this.inactivityTimer);
-    if (this.periodicCheckInterval) clearInterval(this.periodicCheckInterval);
-    
-    // Remove event listeners
-    this.removeEventListeners();
+    console.log('🔓 Security monitoring is disabled - no action taken');
+    return; // Do nothing
+  }
+
+  // Start session - DISABLED
+  startSession() {
+    return; // Do nothing
+  }
+
+  // Clear closure flag - DISABLED
+  clearClosureFlag() {
+    return; // Do nothing
+  }
+
+  // Should require login - DISABLED (always false)
+  shouldRequireLogin() {
+    return false; // Never require login due to security
+  }
+
+  // Force logout - DISABLED
+  async forceLogout(reason) {
+    console.log('🔓 Force logout disabled:', reason);
+    return; // Do nothing
   }
 
   init() {
-    // Removed automatic initialization - now manual
+    // Disabled - no initialization
   }
 
   checkAppClosure() {
@@ -373,12 +370,12 @@ async function handleRouting() {
   let user = state.getState('user');
   let profile = state.getState('profile');
 
-  // Security Check: Force login if app was closed
-  if (securityManager.shouldRequireLogin() && path !== 'login') {
-    console.log('🔒 App was closed - forcing login');
-    window.location.hash = '#login';
-    return;
-  }
+  // Security Check: DISABLED - no forced login
+  // if (securityManager.shouldRequireLogin() && path !== 'login') {
+  //   console.log('🔒 App was closed - forcing login');
+  //   window.location.hash = '#login';
+  //   return;
+  // }
 
   // Guard: Redirect to login if not authenticated
   if (!user && path !== 'login') {
@@ -390,7 +387,8 @@ async function handleRouting() {
   if (user && profile?.status === 'inactive' && path !== 'login') {
     console.warn('Account is deactivated.');
     alert('⚠️ Akun Anda telah dinonaktifkan oleh Administrator. Silakan hubungi pusat bantuan.');
-    await securityManager.forceLogout('Account deactivated');
+    // await securityManager.forceLogout('Account deactivated'); // DISABLED
+    await auth.logout(); // Use regular logout instead
     return;
   }
 
@@ -451,8 +449,8 @@ async function handleRouting() {
 
   // Guard: Redirect logged in user away from login
   if (user && path === 'login') {
-    // Clear closure flag when successfully accessing login
-    securityManager.clearClosureFlag();
+    // Clear closure flag when successfully accessing login - DISABLED
+    // securityManager.clearClosureFlag();
     
     if (profile?.role === 'admin' || profile?.role === 'manager') window.location.hash = '#admin';
     else window.location.hash = '#dashboard';
@@ -468,10 +466,10 @@ async function handleRouting() {
   // Find handler
   const handler = routes[path];
   if (handler) {
-    // Clear closure flag when successfully navigating to authenticated pages
-    if (user && path !== 'login') {
-      securityManager.clearClosureFlag();
-    }
+    // Clear closure flag when successfully navigating to authenticated pages - DISABLED
+    // if (user && path !== 'login') {
+    //   securityManager.clearClosureFlag();
+    // }
     
     // Inject "Secure Area" indicator for admin
     if (path.startsWith('admin')) {
@@ -520,8 +518,8 @@ async function init() {
       }, 3000);
     }
     
-    // Check auth status only if app wasn't closed
-    if (!securityManager.shouldRequireLogin()) {
+    // Check auth status - security check disabled
+    // if (!securityManager.shouldRequireLogin()) {
       const user = await auth.getUser();
 
       if (user) {
@@ -530,7 +528,8 @@ async function init() {
         // Validate profile status
         if (profile?.status === 'inactive') {
           console.log('🔒 User account is inactive');
-          await securityManager.forceLogout('Account is inactive');
+          // await securityManager.forceLogout('Account is inactive'); // DISABLED
+          await auth.logout(); // Use regular logout instead
           return;
         }
         
@@ -540,10 +539,10 @@ async function init() {
           isAuthenticated: true
         });
         
-        // Start security monitoring after successful login
-        securityManager.startSecurityMonitoring();
+        // Start security monitoring after successful login - DISABLED
+        // securityManager.startSecurityMonitoring();
       }
-    }
+    // } // End of disabled security check
 
     // Setup auth listener for real-time changes
     authChecker.setupAuthListener();
