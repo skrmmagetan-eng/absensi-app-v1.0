@@ -3,6 +3,7 @@ import { router, state } from './lib/router.js';
 import { themeManager } from './utils/theme.js';
 import { versionManager } from './utils/version.js';
 import { updateNotificationManager } from './utils/update-notification.js';
+import { deploymentNotificationManager } from './utils/deployment-notification.js';
 import { authChecker } from './utils/auth-check.js';
 import { roleSecurity } from './utils/role-security.js';
 import { PWAUpdateManager, clearAppCache, checkForUpdates } from './utils/pwa-update-manager.js';
@@ -435,13 +436,21 @@ async function handleRouting() {
 // Initialization
 async function init() {
   try {
+    // Log deployment status
+    deploymentNotificationManager.logDeploymentStatus();
+    
     // Check for app updates
     versionManager.showUpdateNotification();
+    
+    // Show deployment success notification
+    setTimeout(() => {
+      deploymentNotificationManager.showDeploymentSuccess();
+    }, 1000);
     
     // Show Quick Order feature notification for new/updated users
     setTimeout(() => {
       updateNotificationManager.showUpdateNotification();
-    }, 2000);
+    }, 4000);
     
     // Check auth status only if app wasn't closed
     if (!securityManager.shouldRequireLogin()) {
