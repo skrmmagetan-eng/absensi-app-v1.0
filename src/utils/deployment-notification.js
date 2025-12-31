@@ -69,7 +69,7 @@ export class DeploymentNotificationManager {
               Deployment Berhasil!
             </div>
             <div style="font-size: 14px; opacity: 0.95; margin-bottom: 12px;">
-              SKRM v${this.DEPLOYMENT_VERSION} telah berhasil di-deploy dengan perbaikan notifikasi dan session timeout.
+              SKRM v${this.DEPLOYMENT_VERSION} telah berhasil di-deploy dengan UI customizations dan perbaikan tampilan.
             </div>
             <div style="display: flex; gap: 8px; margin-top: 12px;">
               <button id="explore-features-btn" style="
@@ -83,7 +83,7 @@ export class DeploymentNotificationManager {
                 cursor: pointer;
                 transition: all 0.2s;
               ">
-                🔧 Coba Perbaikan
+                ✨ Lihat Perubahan
               </button>
               <button id="dismiss-deployment-btn" style="
                 background: transparent;
@@ -158,9 +158,9 @@ export class DeploymentNotificationManager {
       localStorage.setItem(this.DEPLOYMENT_KEY, 'true');
       closeNotification();
       
-      // Navigate to catalog page to show Quick Order
+      // Navigate to admin dashboard to show new UI
       setTimeout(() => {
-        window.location.hash = '#katalog';
+        window.location.hash = '#admin';
       }, 300);
     });
 
@@ -183,12 +183,11 @@ Features: Quick Order System
 Status: ✅ Production Ready
 
 New Features:
-• 🛒 Quick Order dari Katalog
-• 📱 Mobile-optimized shopping cart
-• 🔄 Offline support untuk keranjang
-• 🎯 Smart customer selection
-• 🔒 Enhanced security validation
-• ♿ Accessibility improvements
+• ✨ Personalized dashboard titles
+• 🎨 Clean version displays  
+• 🏢 Sumber Kelapa branding
+• 📱 Enhanced user experience
+• 🔧 UI/UX improvements
     `);
   }
 

@@ -16,8 +16,9 @@ export async function renderDashboardPage() {
       <div class="container">
         <!-- Welcome Header -->
         <div class="mb-lg">
-          <h1>Selamat Datang, ${profile?.name || 'Karyawan'}! 👋</h1>
-          <p style="color: var(--text-muted);">${formatDate(new Date())}</p>
+          <h1>${profile?.name || 'User'} 👋</h1>
+          <p style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.75rem;">${profile?.role || 'Employee'}</p>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">${formatDate(new Date())}</p>
         </div>
 
         <!-- Stats & Quick Actions Combined -->

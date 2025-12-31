@@ -10,10 +10,13 @@ export class UpdateNotificationManager {
 
   // Check if user should see the Quick Order introduction
   shouldShowQuickOrderIntro() {
-    const hasSeenNotification = localStorage.getItem(this.NOTIFICATION_KEY);
-    const hasCompletedIntro = localStorage.getItem(this.FEATURE_INTRO_KEY);
+    // Disabled: User can access info from "Tentang Aplikasi" menu instead
+    return false;
     
-    return !hasSeenNotification || !hasCompletedIntro;
+    // Original logic (commented out):
+    // const hasSeenNotification = localStorage.getItem(this.NOTIFICATION_KEY);
+    // const hasCompletedIntro = localStorage.getItem(this.FEATURE_INTRO_KEY);
+    // return !hasSeenNotification || !hasCompletedIntro;
   }
 
   // Show comprehensive update notification with feature highlights
